@@ -12,6 +12,36 @@ const apiKeyInput = document.getElementById('api-key');
 const apiKeyButton = document.getElementById('key-button');
 const verifyButton = document.getElementById('verify-button');
 
+class Message {
+    static messagesContainer = messagesDiv;
+    static messages = [];
+
+    constructor(text, type = 'user', pending = false) {
+        this.text = text;
+        this.type = type;
+        this.pending = pending;
+        this.element = this.createElement();
+        Message.messages.push(this);
+    }
+
+    createElement() {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${this.type}`;
+        if (this.pending) {
+            messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
+            messageDiv.classList.add('pending');
+        } else {
+            messageDiv.innerText = this.text;
+        }
+        return messageDiv;
+    }
+
+    addMessageElement() {
+        Message.messagesContainer.insertBefore(this.element, endSpacer);
+        messagesViewport.scrollTop = messagesViewport.scrollHeight;
+    }
+}
+
 apiKeyButton.addEventListener('click', () => {
     apiKeyBlock.classList.toggle('collapsed');
 });
@@ -23,7 +53,7 @@ promptInput.addEventListener('input', () => {
 });
 
 // send on enter key press
-promptInput.addEventListener('keydown', e => {
+promptInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendButton.click();
@@ -36,14 +66,16 @@ sendButton.addEventListener('click', () => {
     if (!prompt) {
         return;
     }
-    
+
     console.log('sending', prompt);
 
     mainDiv.classList.add('chat');
 
-    const message = document.createElement('div');
-    message.className = 'message user';
-    message.innerText = prompt;
+    const message = new Message(prompt, 'user');
+    message.addMessageElement();
 
-    messagesDiv.insertBefore(message, endSpacer);
+    const response = new Message('', 'bot', true);
+    response.addMessageElement();
+
+    messagesViewport.scrollTop = messagesViewport.scrollHeight;
 });
