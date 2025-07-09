@@ -1,27 +1,44 @@
-const mainDiv = document.getElementById('main');
-const messagesDiv = document.getElementById('messages');
-const messagesViewport = document.getElementById('messages-viewport');
-const endSpacer = document.getElementById('end-spacer');
+const dom = {
+    mainDiv: document.getElementById('main'),
+    messagesDiv: document.getElementById('messages'),
+    messagesViewport: document.getElementById('messages-viewport'),
+    endSpacer: document.getElementById('end-spacer'),
 
-const promptInput = document.getElementById('prompt');
-const sendButton = document.getElementById('send');
-const addButton = document.getElementById('add');
+    promptInput: document.getElementById('prompt'),
+    sendButton: document.getElementById('send'),
+    addButton: document.getElementById('add'),
 
-const apiKeyBlock = document.getElementById('key-block');
-const apiKeyInput = document.getElementById('api-key');
-const apiKeyButton = document.getElementById('key-button');
-const verifyButton = document.getElementById('verify-button');
+    apiKeyBlock: document.getElementById('key-block'),
+    apiKeyInput: document.getElementById('api-key'),
+    apiKeyButton: document.getElementById('key-button'),
+    verifyButton: document.getElementById('verify-button'),
+};
+
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+
+class Conversation {
+    constructor() {
+        this.messages = [];
+    }
+
+    newMessage(text, type = 'user', pending = false) {
+        const message = new Message(text, type, pending);
+        this.messages.push(message);
+        message.addMessageElement();
+        return message;
+    }
+}
 
 class Message {
-    static messagesContainer = messagesDiv;
-    static messages = [];
+    static messagesContainer = dom.messagesDiv;
+    static ticker = 0;
 
     constructor(text, type = 'user', pending = false) {
+        this.id = Message.ticker++;
         this.text = text;
         this.type = type;
         this.pending = pending;
         this.element = this.createElement();
-        Message.messages.push(this);
     }
 
     createElement() {
@@ -37,31 +54,31 @@ class Message {
     }
 
     addMessageElement() {
-        Message.messagesContainer.insertBefore(this.element, endSpacer);
-        messagesViewport.scrollTop = messagesViewport.scrollHeight;
+        Message.messagesContainer.insertBefore(this.element, dom.endSpacer);
+        dom.messagesViewport.scrollTop = dom.messagesViewport.scrollHeight;
     }
 }
 
-apiKeyButton.addEventListener('click', () => {
-    apiKeyBlock.classList.toggle('collapsed');
+dom.apiKeyButton.addEventListener('click', () => {
+    dom.apiKeyBlock.classList.toggle('collapsed');
 });
 
 // resize prompt field on input
-promptInput.addEventListener('input', () => {
-    promptInput.style.height = 'auto';
-    promptInput.style.height = `${promptInput.scrollHeight}px`;
+dom.promptInput.addEventListener('input', () => {
+    dom.promptInput.style.height = 'auto';
+    dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
 });
 
 // send on enter key press
-promptInput.addEventListener('keydown', (e) => {
+dom.promptInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendButton.click();
+        dom.sendButton.click();
     }
 });
 
-sendButton.addEventListener('click', () => {
-    const prompt = promptInput.value.trim();
+dom.sendButton.addEventListener('click', () => {
+    const prompt = dom.promptInput.value.trim();
 
     if (!prompt) {
         return;
@@ -69,13 +86,10 @@ sendButton.addEventListener('click', () => {
 
     console.log('sending', prompt);
 
-    mainDiv.classList.add('chat');
+    dom.mainDiv.classList.add('chat');
 
-    const message = new Message(prompt, 'user');
-    message.addMessageElement();
-
-    const response = new Message('', 'bot', true);
-    response.addMessageElement();
-
-    messagesViewport.scrollTop = messagesViewport.scrollHeight;
+    conversation.newMessage(prompt, 'user');
+    conversation.newMessage('', 'bot', true);
 });
+
+const conversation = new Conversation();
