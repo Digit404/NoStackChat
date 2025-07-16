@@ -27,6 +27,26 @@ class Conversation {
         message.addMessageElement();
         return message;
     }
+
+    getLastMessage() {
+        return this.messages.length > 0 ? this.messages[this.messages.length - 1] : null;
+    }
+
+    toAPIFormat() {
+        return this.messages.map((msg) => ({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.text,
+        }));
+    }
+
+    removeMessage(id) {
+        const index = this.messages.findIndex((msg) => msg.id === id);
+        if (index !== -1) {
+            const message = this.messages[index];
+            message.remove();
+            this.messages.splice(index, 1);
+        }
+    }
 }
 
 class Message {
@@ -53,10 +73,78 @@ class Message {
         return messageDiv;
     }
 
+    setText(newText) {
+        this.text = newText;
+        if (this.element) {
+            this.element.classList.remove('pending');
+            this.pending = false;
+            this.element.innerHTML = '';
+            this.element.innerText = this.text;
+        }
+    }
+
+    setType(newType) {
+        this.type = newType;
+        if (this.element) {
+            this.element.className = `message ${this.type}`;
+        }
+    }
+
+    remove() {
+        if (this.element && this.element.parentNode) {
+            this.element.parentNode.removeChild(this.element);
+        }
+    }
+
     addMessageElement() {
         Message.messagesContainer.insertBefore(this.element, dom.endSpacer);
         dom.messagesViewport.scrollTop = dom.messagesViewport.scrollHeight;
     }
+}
+
+function getRespomse(conversation) {
+    const messages = conversation.toAPIFormat();
+    const apiKey = dom.apiKeyInput.value.trim();
+
+    if (!apiKey) {
+        console.error('API key is required');
+        const botMessage = conversation.getLastMessage();
+        botMessage.setText('API key is required.');
+        botMessage.setType('error');
+        return;
+    }
+
+    const requestBody = {
+        model: 'gpt-4.1',
+        messages: messages,
+    };
+
+    fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${dom.apiKeyInput.value.trim()}`,
+        },
+        body: JSON.stringify(requestBody),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.choices && data.choices.length > 0) {
+                const botMessage = conversation.getLastMessage();
+                if (botMessage) {
+                    botMessage.setText(data.choices[0].message.content);
+                    // scroll to the bottom of the messages viewport
+                    dom.messagesViewport.scrollTop = dom.messagesViewport.scrollHeight;
+                } else {
+                    console.error('No last message found in conversation');
+                }
+            } else {
+                console.error('No choices in response:', data);
+            }
+        })
+        .catch((error) => {
+            console.error('Error fetching response:', error);
+        });
 }
 
 dom.apiKeyButton.addEventListener('click', () => {
@@ -84,12 +172,21 @@ dom.sendButton.addEventListener('click', () => {
         return;
     }
 
-    console.log('sending', prompt);
-
     dom.mainDiv.classList.add('chat');
+
+    const lastMessage = conversation.getLastMessage();
+
+    if (lastMessage && lastMessage.type === 'error') {
+        conversation.removeMessage(lastMessage.id);
+    }
 
     conversation.newMessage(prompt, 'user');
     conversation.newMessage('', 'bot', true);
+
+    dom.promptInput.value = '';
+    dom.promptInput.style.height = 'auto';
+
+    getRespomse(conversation);
 });
 
 const conversation = new Conversation();
