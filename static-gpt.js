@@ -58,10 +58,12 @@ class Message {
         this.text = text;
         this.type = type;
         this.pending = pending;
-        this.element = this.createElement();
+        this.element = this.buildElement();
     }
 
-    createElement() {
+    buildElement() {
+        const messageContainer = document.createElement('div');
+        messageContainer.classList = `message-container ${this.type}`;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${this.type}`;
         if (this.pending) {
@@ -70,16 +72,42 @@ class Message {
         } else {
             messageDiv.innerText = this.text;
         }
-        return messageDiv;
+
+        const copyButton = document.createElement('button');
+        copyButton.classList = 'icon message-button';
+        copyButton.innerText = 'content_copy';
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard
+                .writeText(this.text)
+                .then(() => {
+                    copyButton.innerText = 'check';
+                    setTimeout(() => {
+                        copyButton.innerText = 'content_copy';
+                    }, 2000);
+                })
+                .catch((err) => {
+                    console.error('Failed to copy text: ', err);
+                    copyButton.innerText = 'error';
+                    setTimeout(() => {
+                        copyButton.innerText = 'content_copy';
+                    }, 2000);
+                });
+        });
+
+        messageContainer.appendChild(messageDiv);
+        messageContainer.appendChild(copyButton);
+
+        return messageContainer;
     }
 
     setText(newText) {
         this.text = newText;
         if (this.element) {
-            this.element.classList.remove('pending');
+            const messageDiv = this.element.querySelector('.message');
+            messageDiv.classList.remove('pending');
             this.pending = false;
-            this.element.innerHTML = '';
-            this.element.innerText = this.text;
+            messageDiv.innerHTML = '';
+            messageDiv.innerText = this.text;
         }
     }
 
