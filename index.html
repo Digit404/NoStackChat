@@ -40,7 +40,27 @@
             <input type="password" id="api-key" placeholder="Enter OpenAI API key" autocomplete="off">
             <button id="verify-button" class="icon">check</button>
         </div>
-        <button id="new-chat-button" class="icon">add_notes</button>
+        <a id="new-chat-button" class="icon" href="./">add_comment</a>
+    </div>
+    <div id="popup" class="popup-background hidden">
+        <div id="popup-content" class="popup-content info">
+            <span id="popup-icon" class="popup-header">ℹ️</span>
+            <div style="text-align:left; max-width:480px; margin:0 auto;" id="popup-text">
+                <strong>Heads up:</strong> As a general rule, you shouldn’t paste your API key into a website.<br> This
+                site is <b>100% static</b> and only talks to OpenAI.<br> <a
+                    href="https://github.com/Digit404/Bitwise" target="_blank" rel="noopener noreferrer">Source code on GitHub</a>
+                <hr style="margin:18px 0 12px 0; border:none; border-top:1px solid #e8e8e8;">
+                <ul style="text-align:left; padding-left:24px; font-size:0.98em; margin:0;">
+                    <li>This site does <b>not</b> log, store, or access your API key or prompts. Everything stays on
+                        your device.</li>
+                    <li>Only official OpenAI servers ever see your key.</li>
+                    <li>For maximum safety, use a <b>restricted or temporary API key</b>.</li>
+                    <li>Be careful with browser extensions—some can read anything on any website.</li>
+                    <li>You can open DevTools and audit the whole source. No secrets here.</li>
+                </ul>
+            </div>
+            <button id="popup-close" class="button pill">OK, got it</button>
+        </div>
     </div>
     <script src="./static-gpt.js" defer></script>
 </body>

@@ -14,6 +14,8 @@ const dom = {
     verifyButton: document.getElementById('verify-button'),
 
     newChatButton: document.getElementById('new-chat-button'),
+
+    popup: document.getElementById('popup'),
 };
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -56,12 +58,11 @@ class Message {
     static messagesContainer = dom.messagesDiv;
     static ticker = 0;
 
-    constructor(text, type = 'user', pending = false) {
+    constructor(text, type = 'user') {
         this.id = Message.ticker++;
         this.setText(text);
         this.setType(type);
-        this.pending = pending;
-        this.element = this.buildElement();
+        this.buildElement();
     }
 
     buildElement() {
@@ -70,60 +71,169 @@ class Message {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${this.type}`;
 
-        if (this.pending) {
-            messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
-            messageDiv.classList.add('pending');
-        } else {
-            messageDiv.innerHTML = this.html || this.text;
-        }
+        messageDiv.innerHTML = this.html || this.text;
 
-        if (this.type === "user") {
+        if (this.type === 'user') {
             messageDiv.classList.add('dark');
         }
 
-        const copyButton = document.createElement('button');
-        copyButton.classList = 'icon message-button';
-        copyButton.innerText = 'content_copy';
-        copyButton.addEventListener('click', () => {
-            navigator.clipboard
-                .writeText(this.text)
-                .then(() => {
-                    copyButton.innerText = 'check';
-                    setTimeout(() => {
-                        copyButton.innerText = 'content_copy';
-                    }, 2000);
-                })
-                .catch((err) => {
-                    console.error('Failed to copy text: ', err);
-                    copyButton.innerText = 'error';
-                    setTimeout(() => {
-                        copyButton.innerText = 'content_copy';
-                    }, 2000);
-                });
+        this.copyButton = document.createElement('button');
+        this.copyButton.classList = 'icon message-button';
+        this.copyButton.innerText = 'content_copy';
+        this.copyButton.addEventListener('click', () => {
+            this.copyText();
         });
 
-        const deleteButton = document.createElement('button');
-        deleteButton.classList = 'icon message-button';
-        deleteButton.innerText = 'delete';
-        deleteButton.addEventListener('click', () => {
+        this.deleteButton = document.createElement('button');
+        this.deleteButton.classList = 'icon message-button';
+        this.deleteButton.innerText = 'delete';
+        this.deleteButton.addEventListener('click', () => {
             conversation.removeMessage(this.id);
         });
 
-        messageContainer.appendChild(messageDiv);
-        messageContainer.appendChild(copyButton);
-        messageContainer.appendChild(deleteButton);
+        this.editButton = document.createElement('button');
+        this.editButton.classList = 'icon message-button';
+        this.editButton.innerText = 'edit';
+        this.editButton.addEventListener('click', () => {
+            this.edit();
+        });
 
-        return messageContainer;
+        this.saveButton = document.createElement('button');
+        this.saveButton.classList = 'icon message-button hidden';
+        this.saveButton.innerText = 'save';
+        this.saveButton.addEventListener('click', () => {
+            this.saveEdit();
+        });
+
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'message-button-container';
+
+        messageContainer.appendChild(messageDiv);
+        messageContainer.appendChild(buttonsContainer);
+
+        buttonsContainer.appendChild(this.editButton);
+        buttonsContainer.appendChild(this.saveButton);
+        buttonsContainer.appendChild(this.copyButton);
+        buttonsContainer.appendChild(this.deleteButton);
+
+        if (this.type === 'bot') {
+            this.regenerateButton = document.createElement('button');
+            this.regenerateButton.classList = 'icon message-button';
+            this.regenerateButton.innerText = 'refresh';
+            this.regenerateButton.addEventListener('click', () => {
+                // delete all messages after this one
+                const index = conversation.messages.findIndex((msg) => msg.id === this.id);
+                if (index !== -1) {
+                    for (let i = index + 1; i < conversation.messages.length; i++) {
+                        conversation.messages[i].remove();
+                        conversation.messages.splice(i, 1);
+                        i--; // adjust index after removal
+                    }
+                }
+
+                this.setPending();
+                getResponse(conversation);
+            });
+            buttonsContainer.appendChild(this.regenerateButton);
+        } else if (this.type === 'user') {
+            this.resendButton = document.createElement('button');
+            this.resendButton.classList = 'icon message-button hidden';
+            this.resendButton.innerText = 'send';
+            this.resendButton.addEventListener('click', () => {
+                this.saveEdit();
+
+                // delete all messages after this one
+                const index = conversation.messages.findIndex((msg) => msg.id === this.id);
+                if (index !== -1) {
+                    for (let i = index + 1; i < conversation.messages.length; i++) {
+                        conversation.messages[i].remove();
+                        conversation.messages.splice(i, 1);
+                        i--; // adjust index after removal
+                    }
+                }
+
+                const responseMessage = conversation.newMessage('', 'bot');
+                responseMessage.setPending();
+                getResponse(conversation);
+            });
+            buttonsContainer.insertBefore(this.resendButton, this.copyButton);
+        }
+        
+        this.messageContainer = messageContainer;
+        this.messageElement = messageDiv;
+    }
+
+    setPending() {
+        this.pending = true;
+        this.messageElement.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
+        this.messageElement.classList.add('pending');
+    }
+
+    copyText() {
+        navigator.clipboard
+            .writeText(this.text)
+            .then(() => {
+                this.copyButton.innerText = 'check';
+                setTimeout(() => {
+                    this.copyButton.innerText = 'content_copy';
+                }, 2000);
+            })
+            .catch((err) => {
+                console.error('Failed to copy text: ', err);
+                this.copyButton.innerText = 'error';
+                setTimeout(() => {
+                    this.copyButton.innerText = 'content_copy';
+                }, 2000);
+            });
+    }
+
+    edit() {
+        this.messageContainer.classList.add('editing');
+        this.messageElement.innerText = this.text;
+        this.messageElement.contentEditable = 'true';
+        this.messageElement.focus();
+        this.saveButton.classList.remove('hidden');
+        this.editButton.classList.add('hidden');
+        if (this.resendButton) {
+            this.resendButton.classList.remove('hidden');
+        }
+
+        // move cursor to end of text
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.selectNodeContents(this.messageElement);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    saveEdit() {
+        if (!this.messageContainer.classList.contains('editing')) {
+            return;
+        }
+        const newText = this.messageElement.innerHTML
+            .replace(/<div>/gi, '\n')
+            .replace(/<\/div>/gi, '')
+            .replace(/<br>/gi, '\n')
+            .trim();
+        this.setText(newText);
+        this.messageContainer.classList.remove('editing');
+        this.messageElement.contentEditable = 'false';
+        this.messageElement.blur();
+        this.saveButton.classList.add('hidden');
+        this.editButton.classList.remove('hidden');
+        if (this.resendButton) {
+            this.resendButton.classList.add('hidden');
+        }
     }
 
     setText(newText) {
         this.text = newText;
         this.html = DOMPurify.sanitize(md.render(newText));
-        if (this.element) {
-            const messageDiv = this.element.querySelector('.message');
-            messageDiv.classList.remove('pending');
+        if (this.messageContainer) {
+            this.messageElement.classList.remove('pending');
             this.pending = false;
-            messageDiv.innerHTML = this.html || this.text;
+            this.messageElement.innerHTML = this.html || this.text;
             if (window.hljs) {
                 hljs.highlightAll();
             }
@@ -132,28 +242,38 @@ class Message {
 
     setType(newType) {
         this.type = newType;
-        if (this.element) {
-            this.element.classList = `message ${this.type}`;
-            const messageDiv = this.element.querySelector('.message');
-            messageDiv.classList = `message ${this.type}`;
+        if (this.messageContainer) {
+            this.messageContainer.classList = `message ${this.type}`;
+            this.messageElement.classList = `message ${this.type}`;
             if (this.pending) {
-                messageDiv.classList.add('pending');
-                messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
+                this.messageElement.classList.add('pending');
+                this.messageElement.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
             }
         }
     }
 
     remove() {
-        if (this.element && this.element.parentNode) {
-            this.element.parentNode.removeChild(this.element);
+        if (this.messageContainer && this.messageContainer.parentNode) {
+            this.messageContainer.parentNode.removeChild(this.messageContainer);
         }
     }
 
     addMessageElement() {
-        Message.messagesContainer.insertBefore(this.element, dom.endSpacer);
+        Message.messagesContainer.insertBefore(this.messageContainer, dom.endSpacer);
         dom.messagesViewport.scrollTop = dom.messagesViewport.scrollHeight;
     }
 }
+
+function hidePopup() {
+    dom.popup.classList.add('hidden');
+}
+
+if (!localStorage.getItem('notWarnedApiKey')) {
+    dom.popup.classList.remove('hidden');
+    localStorage.setItem('notWarnedApiKey', '1');
+}
+
+document.getElementById('popup-close').onclick = hidePopup;
 
 async function streamOpenAIResponse(conversation, botMessage) {
     const messages = conversation.toAPIFormat();
@@ -196,16 +316,15 @@ async function streamOpenAIResponse(conversation, botMessage) {
     let rawOutput = '';
     let done = false;
 
-    const messageDiv = botMessage.element.querySelector('.message');
-    messageDiv.classList.remove('pending');
-    messageDiv.innerHTML = '';
+    botMessage.messageElement.classList.remove('pending');
+    botMessage.messageElement.innerHTML = '';
 
     let lastRender = 0;
     let scheduled = false;
     function scheduleRender(force = false) {
         const now = Date.now();
         if (force || now - lastRender > 60) {
-            messageDiv.innerHTML = DOMPurify.sanitize(md.render(rawOutput));
+            botMessage.messageElement.innerHTML = DOMPurify.sanitize(md.render(rawOutput));
             lastRender = now;
             if (window.hljs) {
                 hljs.highlightAll();
@@ -247,7 +366,7 @@ async function streamOpenAIResponse(conversation, botMessage) {
             }
         }
     }
-    
+
     scheduleRender(true);
 
     botMessage.setText(rawOutput);
@@ -265,7 +384,8 @@ dom.apiKeyButton.addEventListener('click', () => {
     dom.apiKeyBlock.classList.toggle('collapsed');
 });
 
-dom.newChatButton.addEventListener('click', () => {
+dom.newChatButton.addEventListener('click', (e) => {
+    e.preventDefault();
     dom.mainDiv.classList.remove('chat');
     dom.messagesDiv.innerHTML = '';
     dom.messagesDiv.appendChild(dom.endSpacer);
@@ -304,7 +424,8 @@ dom.sendButton.addEventListener('click', () => {
     }
 
     conversation.newMessage(prompt, 'user');
-    conversation.newMessage('', 'bot', true);
+    const responseMessage = conversation.newMessage('', 'bot');
+    responseMessage.setPending();
 
     dom.promptInput.value = '';
     dom.promptInput.style.height = 'auto';
