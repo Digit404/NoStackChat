@@ -383,6 +383,22 @@ table tr:last-child td:last-child {
     border-radius: var(--border-radius) 0 0 var(--border-radius);
 }
 
+#new-chat-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background-color: var(--fg-color);
+    color: var(--text-color);
+    height: 3rem;
+    width: 3rem;
+    font-size: 2rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
 #api-key {
     width: 300px;
     height: 3rem;
@@ -440,7 +456,8 @@ table tr:last-child td:last-child {
         color: var(--bg-color);
     }
 
-    #key-button:hover {
+    #key-button:hover,
+    #new-chat-button:hover {
         background-color: var(--fg-color-hover);
     }
 

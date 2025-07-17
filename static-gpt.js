@@ -12,6 +12,8 @@ const dom = {
     apiKeyInput: document.getElementById('api-key'),
     apiKeyButton: document.getElementById('key-button'),
     verifyButton: document.getElementById('verify-button'),
+
+    newChatButton: document.getElementById('new-chat-button'),
 };
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -263,6 +265,15 @@ dom.apiKeyButton.addEventListener('click', () => {
     dom.apiKeyBlock.classList.toggle('collapsed');
 });
 
+dom.newChatButton.addEventListener('click', () => {
+    dom.mainDiv.classList.remove('chat');
+    dom.messagesDiv.innerHTML = '';
+    dom.messagesDiv.appendChild(dom.endSpacer);
+    dom.promptInput.value = '';
+    dom.promptInput.style.height = 'auto';
+    conversation = new Conversation();
+});
+
 // resize prompt field on input
 dom.promptInput.addEventListener('input', () => {
     dom.promptInput.style.height = 'auto';
@@ -301,4 +312,4 @@ dom.sendButton.addEventListener('click', () => {
     getResponse(conversation);
 });
 
-const conversation = new Conversation();
+let conversation = new Conversation();
