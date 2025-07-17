@@ -67,11 +67,16 @@ class Message {
         messageContainer.classList = `message-container ${this.type}`;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${this.type}`;
+
         if (this.pending) {
             messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
             messageDiv.classList.add('pending');
         } else {
             messageDiv.innerHTML = this.html || this.text;
+        }
+
+        if (this.type === "user") {
+            messageDiv.classList.add('dark');
         }
 
         const copyButton = document.createElement('button');
@@ -148,49 +153,110 @@ class Message {
     }
 }
 
-function getResponse(conversation) {
+async function streamOpenAIResponse(conversation, botMessage) {
     const messages = conversation.toAPIFormat();
     const apiKey = dom.apiKeyInput.value.trim();
-
     if (!apiKey) {
-        console.error('API key is required');
-        const botMessage = conversation.getLastMessage();
         botMessage.setText('API key is required.');
         botMessage.setType('error');
         return;
     }
-
     const requestBody = {
         model: 'gpt-4.1',
-        messages: messages,
+        messages,
+        stream: true,
     };
-
-    fetch(OPENAI_API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${dom.apiKeyInput.value.trim()}`,
-        },
-        body: JSON.stringify(requestBody),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.choices && data.choices.length > 0) {
-                const botMessage = conversation.getLastMessage();
-                if (botMessage) {
-                    botMessage.setText(data.choices[0].message.content);
-                    // scroll to the bottom of the messages viewport
-                    dom.messagesViewport.scrollTop = dom.messagesViewport.scrollHeight;
-                } else {
-                    console.error('No last message found in conversation');
-                }
-            } else {
-                console.error('No choices in response:', data);
-            }
-        })
-        .catch((error) => {
-            console.error('Error fetching response:', error);
+    let response;
+    try {
+        response = await fetch(OPENAI_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
         });
+    } catch (err) {
+        botMessage.setText('API request failed.');
+        botMessage.setType('error');
+        return;
+    }
+
+    if (!response.body) {
+        botMessage.setText('Streaming not supported by browser or API');
+        botMessage.setType('error');
+        return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    let buffer = '';
+    let rawOutput = '';
+    let done = false;
+
+    const messageDiv = botMessage.element.querySelector('.message');
+    messageDiv.classList.remove('pending');
+    messageDiv.innerHTML = '';
+
+    let lastRender = 0;
+    let scheduled = false;
+    function scheduleRender(force = false) {
+        const now = Date.now();
+        if (force || now - lastRender > 60) {
+            messageDiv.innerHTML = DOMPurify.sanitize(md.render(rawOutput));
+            lastRender = now;
+            if (window.hljs) {
+                hljs.highlightAll();
+            }
+        } else if (!scheduled) {
+            scheduled = true;
+            setTimeout(() => {
+                scheduleRender(true);
+                scheduled = false;
+            }, 65);
+        }
+    }
+
+    while (!done) {
+        let { value, done: streamDone } = await reader.read();
+        if (streamDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        let lines = buffer.split('\n');
+
+        buffer = lines.pop();
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+            if (line === 'data: [DONE]') {
+                done = true;
+                break;
+            }
+            if (!line.startsWith('data: ')) continue;
+            try {
+                const payload = JSON.parse(line.slice(6));
+                const content = payload.choices?.[0]?.delta?.content;
+                if (content) {
+                    rawOutput += content;
+                    scheduleRender();
+                }
+            } catch (err) {
+                continue;
+            }
+        }
+    }
+    
+    scheduleRender(true);
+
+    botMessage.setText(rawOutput);
+}
+
+function getResponse(conversation) {
+    const botMessage = conversation.getLastMessage();
+    streamOpenAIResponse(conversation, botMessage).catch((error) => {
+        botMessage.setText('**Error:** ' + error.message);
+        botMessage.setType('error');
+    });
 }
 
 dom.apiKeyButton.addEventListener('click', () => {
