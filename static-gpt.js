@@ -94,8 +94,16 @@ class Message {
                 });
         });
 
+        const deleteButton = document.createElement('button');
+        deleteButton.classList = 'icon message-button';
+        deleteButton.innerText = 'delete';
+        deleteButton.addEventListener('click', () => {
+            conversation.removeMessage(this.id);
+        });
+
         messageContainer.appendChild(messageDiv);
         messageContainer.appendChild(copyButton);
+        messageContainer.appendChild(deleteButton);
 
         return messageContainer;
     }
@@ -114,7 +122,13 @@ class Message {
     setType(newType) {
         this.type = newType;
         if (this.element) {
-            this.element.className = `message ${this.type}`;
+            this.element.classList = `message ${this.type}`;
+            const messageDiv = this.element.querySelector('.message');
+            messageDiv.classList = `message ${this.type}`;
+            if (this.pending) {
+                messageDiv.classList.add('pending');
+                messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
+            }
         }
     }
 
