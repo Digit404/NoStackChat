@@ -163,14 +163,7 @@ class MessageView {
         buttonsContainer.appendChild(this.elements.saveButton);
 
         // add type-specific buttons
-        if (this.message.type === 'bot') {
-            this.elements.regenerateButton = this.createButton('refresh', () => {
-                this.conversation.deleteMessagesAfter(this.message.id);
-                this.message.setPending();
-                getResponse(this.conversation);
-            });
-            buttonsContainer.appendChild(this.elements.regenerateButton);
-        } else if (this.message.type === 'user') {
+        if (this.message.type === 'user') {
             this.elements.resendButton = this.createButton(
                 'send',
                 () => {
@@ -187,6 +180,15 @@ class MessageView {
 
         buttonsContainer.appendChild(this.elements.copyButton);
         buttonsContainer.appendChild(this.elements.deleteButton);
+
+        if (this.message.type === 'bot') {
+            this.elements.regenerateButton = this.createButton('refresh', () => {
+                this.conversation.deleteMessagesAfter(this.message.id);
+                this.message.setPending();
+                getResponse(this.conversation);
+            });
+            buttonsContainer.appendChild(this.elements.regenerateButton);
+        }
 
         // assemble elements
         messageContainer.appendChild(messageDiv);
@@ -218,12 +220,18 @@ class MessageView {
         this.elements.messageDiv.classList = `message ${this.message.type}`;
         if (this.message.type === 'user') {
             this.elements.messageDiv.classList.add('dark');
+        } else {
+            this.elements.messageDiv.classList.remove('dark');
         }
 
         this.updateContent();
     }
 
     copyText() {
+        if (this.message.pending) {
+            return;
+        }
+
         navigator.clipboard
             .writeText(this.message.text)
             .then(() => {
@@ -242,6 +250,10 @@ class MessageView {
     }
 
     edit() {
+        if (this.message.pending) {
+            return;
+        }
+
         this.elements.container.classList.add('editing');
         this.elements.messageDiv.innerText = this.message.text;
         this.elements.messageDiv.contentEditable = 'true';
@@ -322,7 +334,7 @@ async function streamOpenAIResponse(conversation, botMessage) {
     };
 
     let response;
-    
+
     try {
         response = await fetch(OPENAI_API_URL, {
             method: 'POST',
