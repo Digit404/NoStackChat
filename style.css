@@ -1,6 +1,9 @@
-.dark {
-    --bg-color: #222223;
-    --fg-color: #111112;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+:root {
+    --font: "DM Sans", sans-serif;
+    --message-width: 800px;
+    --chat-width: 1000px;
 }
 
 body {
@@ -8,8 +11,106 @@ body {
     padding: 0;
 }
 
+/* basic rules */
+
+code {
+    background: var(--bg-color);
+    color: var(--red);
+    font-family: var(--font-mono);
+    padding: 2.5px 5px;
+    border-radius: var(--border-radius);
+    font-size: .9rem;
+}
+
+pre code,
+code.block {
+    background-color: var(--bg-color);
+    display: block;
+    white-space: pre;
+    color: var(--text-color);
+    padding: 10px 20px;
+    margin: 10px 0;
+    border-left: 5px solid var(--primary-color);
+    overflow-x: auto;
+}
+
+hr {
+    margin: 20px 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: bold;
+}
+
+h1 {
+    color: var(--text-color);
+    font-size: 3rem;
+    text-align: center;
+}
+
+a {
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+a::after {
+    content: "link";
+    color: var(--blue);
+    padding-left: 0.1em;
+    font-family: var(--font-icons)
+}
+
+blockquote {
+    border-left: 5px solid #999;
+    background: color-mix(in srgb, #999 15%, transparent);
+    padding: 10px 20px;
+    margin: 10px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+}
+
+table th,
+table td {
+    padding: 10px;
+    text-align: left;
+}
+
+table th {
+    background-color: var(--bg-color);
+    border-bottom: 3px solid var(--fg-color);
+}
+
+table td {
+    background-color: var(--bg-color);
+}
+
+table tr:first-child th:first-child {
+    border-top-left-radius: var(--border-radius);
+}
+
+table tr:first-child th:last-child {
+    border-top-right-radius: var(--border-radius);
+}
+
+table tr:last-child td:first-child {
+    border-bottom-left-radius: var(--border-radius);
+}
+
+table tr:last-child td:last-child {
+    border-bottom-right-radius: var(--border-radius);
+}
+
 #main {
-    background-color: var(--fg-color);
+    background-color: var(--bg-color);
     height: 100%;
     width: 100%;
     display: flex;
@@ -26,17 +127,17 @@ body {
 .controls-container {
     display: flex;
     flex-direction: column;
-    background-color: var(--bg-color);
-    outline: 5px solid var(--fg-color);
+    background-color: var(--fg-color);
+    outline: 5px solid var(--bg-color);
     padding: 10px;
     border-radius: 30px;
-    min-width: 750px;
+    min-width: var(--message-width);
 }
 
 .chat .controls-container {
     position: fixed;
     bottom: 20px;
-    min-width: 1000px;
+    min-width: var(--chat-width);
 }
 
 .controls-container:has(#prompt:focus) {
@@ -62,6 +163,7 @@ body {
 
 .title {
     font-size: 3rem;
+    font-weight: normal;
 }
 
 #messages-viewport {
@@ -85,7 +187,7 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 1000px;
+    max-width: var(--chat-width);
     gap: 15px;
 }
 
@@ -97,9 +199,7 @@ body {
 .message-container {
     display: flex;
     flex-direction: row;
-    align-items: center;
     width: 100%;
-    gap: 10px;
 }
 
 .message-container.user {
@@ -108,26 +208,26 @@ body {
 
 .message {
     padding: 10px 20px;
-    background-color: var(--bg-color);
-    max-width: 50em;
+    background-color: var(--fg-color);
+    max-width: var(--message-width);
 }
 
 .message.user {
     align-self: flex-end;
     border-radius: 20px 20px 0 20px;
     background-color: var(--text-color);
-    color: var(--fg-color);
+    color: var(--bg-color);
 }
 
 .message.user::selection {
-    background-color: var(--fg-color);
+    background-color: var(--bg-color);
     color: var(--text-color);
 }
 
 .message.bot {
     align-self: flex-start;
     border-radius: 20px 20px 20px 0;
-    background-color: var(--bg-color);
+    background-color: var(--fg-color);
     color: var(--text-color);
 }
 
@@ -156,12 +256,14 @@ body {
     background-color: transparent;
     color: var(--text-color);
     font-size: 24px;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border-radius: 1337px;
     cursor: pointer;
-    color: var(--fg-color);
-    transition: color 0.2s ease;
+    color: var(--text-color);
+    opacity: 0;
+    ;
+    transition: opacity 0.2s ease;
 }
 
 .message.error .message-button {
@@ -185,9 +287,8 @@ body {
 #prompt {
     width: 100%;
     padding: 10px;
-    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: var(--bg-color);
+    background-color: var(--fg-color);
     color: var(--text-color);
     font-size: 16px;
     font-family: var(--font);
@@ -217,13 +318,13 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    background-color: var(--bg-color);
+    background-color: var(--fg-color);
     color: var(--text-color);
 }
 
 .toolbar #send {
     background-color: var(--text-color);
-    color: var(--fg-color);
+    color: var(--bg-color);
 }
 
 #key-block {
@@ -232,7 +333,7 @@ body {
     right: 10px;
     display: flex;
     align-items: center;
-    background-color: var(--bg-color);
+    background-color: var(--fg-color);
     border-radius: var(--border-radius);
 }
 
@@ -304,7 +405,7 @@ body {
 
 *::selection {
     background-color: var(--text-color);
-    color: var(--fg-color);
+    color: var(--bg-color);
 }
 
 @keyframes shimmer {
@@ -324,7 +425,7 @@ body {
 
     #send:hover {
         background-color: var(--text-color-hover);
-        color: var(--fg-color);
+        color: var(--bg-color);
     }
 
     #key-button:hover {
@@ -336,10 +437,12 @@ body {
     }
 
     .message-container:hover .message-button {
-        color: var(--fg-color-hover);
+        color: var(--text-color);
+        opacity: 0.25;
     }
 
     .message-container:hover .message-button:hover {
         color: var(--text-color);
+        opacity: 1;
     }
 }

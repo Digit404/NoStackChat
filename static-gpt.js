@@ -15,6 +15,7 @@ const dom = {
 };
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const md = window.markdownit();
 
 class Conversation {
     constructor() {
@@ -55,8 +56,8 @@ class Message {
 
     constructor(text, type = 'user', pending = false) {
         this.id = Message.ticker++;
-        this.text = text;
-        this.type = type;
+        this.setText(text);
+        this.setType(type);
         this.pending = pending;
         this.element = this.buildElement();
     }
@@ -70,7 +71,7 @@ class Message {
             messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
             messageDiv.classList.add('pending');
         } else {
-            messageDiv.innerText = this.text;
+            messageDiv.innerHTML = this.html || this.text;
         }
 
         const copyButton = document.createElement('button');
@@ -110,12 +111,15 @@ class Message {
 
     setText(newText) {
         this.text = newText;
+        this.html = DOMPurify.sanitize(md.render(newText));
         if (this.element) {
             const messageDiv = this.element.querySelector('.message');
             messageDiv.classList.remove('pending');
             this.pending = false;
-            messageDiv.innerHTML = '';
-            messageDiv.innerText = this.text;
+            messageDiv.innerHTML = this.html || this.text;
+            if (window.hljs) {
+                hljs.highlightAll();
+            }
         }
     }
 
@@ -144,7 +148,7 @@ class Message {
     }
 }
 
-function getRespomse(conversation) {
+function getResponse(conversation) {
     const messages = conversation.toAPIFormat();
     const apiKey = dom.apiKeyInput.value.trim();
 
@@ -228,7 +232,7 @@ dom.sendButton.addEventListener('click', () => {
     dom.promptInput.value = '';
     dom.promptInput.style.height = 'auto';
 
-    getRespomse(conversation);
+    getResponse(conversation);
 });
 
 const conversation = new Conversation();
