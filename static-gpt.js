@@ -55,8 +55,17 @@ class Model {
         nameDiv.className = 'model-name';
         nameDiv.innerText = this.name;
 
+        const infoIcon = document.createElement('span');
+        infoIcon.className = 'icon model-info-icon';
+        infoIcon.innerText = 'info';
+
+        infoIcon.addEventListener('mouseover', (e) => {
+            this.createInfoPopup(e.clientX, e.clientY);
+        });
+
         item.appendChild(icon);
         item.appendChild(nameDiv);
+        item.appendChild(infoIcon);
 
         item.addEventListener('click', () => {
             Model.setCurrentModel(this.id);
@@ -64,6 +73,37 @@ class Model {
         });
 
         return item;
+    }
+
+    createInfoPopup(x, y) {
+        const infoPopup = document.createElement('div');
+        infoPopup.className = 'model-info-popup';
+
+        const title = document.createElement('h3');
+        title.className = 'model-info-title';
+        title.innerText = this.name;
+
+        const description = document.createElement('p');
+        description.className = 'model-info-description';
+        description.innerText = this.description;
+
+        const provider = document.createElement('p');
+        provider.className = 'model-info-provider';
+        provider.innerHTML = `<strong>Provider:</strong> ${this.provider}`;
+
+        infoPopup.appendChild(title);
+        infoPopup.appendChild(description);
+        infoPopup.appendChild(provider);
+
+        // position over mouse cursor
+        infoPopup.style.left = `${x - 10}px`;
+        infoPopup.style.top = `${y - 10}px`;
+
+        infoPopup.addEventListener('mouseleave', () => {
+            infoPopup.remove();
+        }, { once: true });
+        
+        document.body.appendChild(infoPopup);
     }
 
     static async loadModels() {
