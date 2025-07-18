@@ -16,10 +16,102 @@ const dom = {
     newChatButton: document.getElementById('new-chat-button'),
 
     popup: document.getElementById('popup'),
+
+    modelSelect: document.getElementById('model-select'),
+    currentModel: document.getElementById('current-model'),
+    modelPopup: document.getElementById('model-popup'),
+    modelList: document.getElementById('model-list'),
 };
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const md = window.markdownit();
+
+class Model {
+    static models = [];
+    static currentModel = null;
+    static defaultModel = 'gpt-4o';
+
+    constructor(data) {
+        this.id = data.id;
+        this.provider = data.provider;
+        this.name = data.name;
+        this.description = data.description;
+        this.icon = data.icon;
+        this.color = data.color;
+        this.capabilities = data.capabilities || [];
+    }
+
+    static async loadModels() {
+        try {
+            const response = await fetch('/known_models.json');
+            const modelsData = await response.json();
+            Model.models = modelsData.map((data) => new Model(data));
+        } catch (error) {
+            console.error('Failed to load models:', error);
+        }
+
+        // set default model if not already set
+        if (!Model.currentModel) {
+            const defaultModel = Model.models.find((m) => m.id === Model.defaultModel);
+            if (defaultModel) {
+                Model.setCurrentModel(defaultModel.id);
+            } else {
+                console.warn(`Default model ${Model.defaultModel} not found.`);
+            }
+        }
+    }
+
+    static buildPopup() {
+        Model.models.forEach((model) => {
+            const modelItem = document.createElement('div');
+            modelItem.className = 'model-item';
+            modelItem.innerHTML = `
+                <img src="${model.icon}" alt="${model.name}" class="model-icon" style="background-color: ${model.color};">
+                <div class="model-info">
+                    <h3 class="model-name">${model.name}</h3>
+                </div>
+            `;
+
+            modelItem.addEventListener('click', () => {
+                Model.setCurrentModel(model.id);
+                dom.modelPopup.classList.add('hidden');
+            });
+
+            dom.modelList.appendChild(modelItem);
+        });
+
+        dom.modelSelect.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dom.modelPopup.classList.toggle('hidden');
+
+            // click outside to close
+            document.addEventListener('click', (event) => {
+                if (!dom.modelPopup.contains(event.target) && !dom.modelSelect.contains(event.target)) {
+                    dom.modelPopup.classList.add('hidden');
+                }
+            }, { once: true });
+        });
+    }
+
+    static setCurrentModel(modelId) {
+        const model = Model.models.find((m) => m.id === modelId);
+        if (model) {
+            Model.currentModel = model;
+            dom.currentModel.innerText = model.name;
+            dom.modelSelect.querySelector('.model-icon').src = model.icon;
+        } else {
+            console.warn(`Model with id ${modelId} not found.`);
+        }
+    }
+
+    static getCurrentModel() {
+        if (!Model.currentModel) {
+            console.warn('No current model set. Returning default model.');
+            return Model.models.find((m) => m.id === Model.defaultModel);
+        }
+        return Model.currentModel;
+    }
+}
 
 class Conversation {
     constructor() {
@@ -331,7 +423,7 @@ async function streamOpenAIResponse(conversation, botMessage) {
     }
 
     const requestBody = {
-        model: 'gpt-4.1',
+        model: Model.getCurrentModel().id,
         messages,
         stream: true,
     };
@@ -487,3 +579,8 @@ dom.sendButton.addEventListener('click', () => {
 });
 
 let conversation = new Conversation();
+
+Model.loadModels().then(() => {
+    Model.buildPopup(dom.modelSelect);
+    Model.setCurrentModel(Model.defaultModel);
+});

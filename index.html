@@ -41,16 +41,26 @@
             <button id="verify-button" class="icon">check</button>
         </div>
         <a id="new-chat-button" class="icon" href="./">add_comment</a>
+        <button id="model-select">
+            <img class="model-icon mini" src="./res/GPT_standard.png"></img>
+            <div id="current-model">Select a model</div>
+            <span class="icon">keyboard_arrow_down</span>
+        </button>
+        <div id="model-popup" class="hidden">
+            <div id="model-list">
+            </div>
+        </div>
     </div>
     <div id="popup" class="popup-background hidden">
         <div id="popup-content" class="popup-content info">
-            <span id="popup-icon" class="popup-header">ℹ️</span>
-            <div style="text-align:left; max-width:480px; margin:0 auto;" id="popup-text">
-                <strong>Heads up:</strong> As a general rule, you shouldn’t paste your API key into a website.<br> This
-                site is <b>100% static</b> and only talks to OpenAI.<br> <a
-                    href="https://github.com/Digit404/Bitwise" target="_blank" rel="noopener noreferrer">Source code on GitHub</a>
-                <hr style="margin:18px 0 12px 0; border:none; border-top:1px solid #e8e8e8;">
-                <ul style="text-align:left; padding-left:24px; font-size:0.98em; margin:0;">
+            <span id="popup-icon" class="popup-header icon">warning</span>
+            <div id="popup-text">
+                <strong>Heads up:</strong> As a general rule, you shouldn't paste your API key into a website.<br> This
+                site is <b>100% static</b> and only talks to OpenAI.<br>
+                <a href="https://github.com/Digit404/StaticGPT" target="_blank" rel="noopener noreferrer"> Source code
+                    on GitHub </a>
+                <hr>
+                <ul>
                     <li>This site does <b>not</b> log, store, or access your API key or prompts. Everything stays on
                         your device.</li>
                     <li>Only official OpenAI servers ever see your key.</li>
