@@ -53,6 +53,8 @@ class Conversation {
             const message = this.messages[index];
             message.remove();
             this.messages.splice(index, 1);
+        } else {
+            console.warn(`Message with id ${id} not found.`);
         }
     }
 
@@ -156,6 +158,7 @@ class MessageView {
         this.elements.copyButton = this.createButton('content_copy', () => this.copyText());
         this.elements.deleteButton = this.createButton('delete', () => {
             this.conversation.removeMessage(this.message.id);
+            this.remove();
         });
 
         // add buttons to container

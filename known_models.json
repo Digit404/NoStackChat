@@ -1,0 +1,54 @@
+[
+    {
+        "id": "gpt-4o",
+        "provider": "OpenAI",
+        "name": "GPT-4o",
+        "description": "Fast, intelligent, flexible GPT model.",
+        "icon": "/res/GPT_standard.png",
+        "color": "#000",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "nonstrict"
+        ]
+    },
+    {
+        "id": "gpt-4.1",
+        "provider": "OpenAI",
+        "name": "GPT-4.1",
+        "description": "Flagship GPT model for complex tasks.",
+        "icon": "/res/GPT_plus.png",
+        "color": "#FFF",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "nonstrict"
+        ]
+    },
+    {
+        "id": "gpt-4.1-mini",
+        "provider": "OpenAI",
+        "name": "GPT-4.1 Mini",
+        "description": "Balanced for intelligence, speed, and cost.",
+        "icon": "/res/GPT_mini.png",
+        "color": "#10A37F",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "nonstrict"
+        ]   
+    },
+    {
+        "id": "o3",
+        "provider": "OpenAI",
+        "name": "o3",
+        "description": "OpenAI's most powerful reasoning model.",
+        "icon": "/res/o3.png",
+        "color": "#000",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "nonstrict"
+        ]
+    }
+]
