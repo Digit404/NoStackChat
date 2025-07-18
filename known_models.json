@@ -6,6 +6,7 @@
         "description": "Fast, intelligent, flexible GPT model.",
         "icon": "/res/GPT_standard.png",
         "color": "#000",
+        "type": "standard",
         "capabilities": [
             "streaming",
             "vision",
@@ -19,6 +20,7 @@
         "description": "Flagship GPT model for complex tasks.",
         "icon": "/res/GPT_plus.png",
         "color": "#FFF",
+        "type": "standard",
         "capabilities": [
             "streaming",
             "vision",
@@ -32,6 +34,21 @@
         "description": "Balanced for intelligence, speed, and cost.",
         "icon": "/res/GPT_mini.png",
         "color": "#10A37F",
+        "type": "mini",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "nonstrict"
+        ]   
+    },
+    {
+        "id": "gpt-4.1-nano",
+        "provider": "OpenAI",
+        "name": "GPT-4.1 Nano",
+        "description": "Fastest, most cost-effective GPT-4.1 model.",
+        "icon": "/res/GPT_nano.png",
+        "color": "#BF3840",
+        "type": "mini",
         "capabilities": [
             "streaming",
             "vision",
@@ -45,6 +62,21 @@
         "description": "OpenAI's most powerful reasoning model.",
         "icon": "/res/o3.png",
         "color": "#000",
+        "type": "reasoning",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "nonstrict"
+        ]
+    },
+    {
+        "id": "o4-mini",
+        "provider": "OpenAI",
+        "name": "o4 Mini",
+        "description": "Faster, more affordable reasoning model.",
+        "icon": "/res/o4-mini.png",
+        "color": "#FFF",
+        "type": "reasoning",
         "capabilities": [
             "streaming",
             "vision",

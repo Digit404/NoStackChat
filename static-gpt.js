@@ -2,7 +2,6 @@ const dom = {
     mainDiv: document.getElementById('main'),
     messagesDiv: document.getElementById('messages'),
     messagesViewport: document.getElementById('messages-viewport'),
-    endSpacer: document.getElementById('end-spacer'),
 
     promptInput: document.getElementById('prompt'),
     sendButton: document.getElementById('send'),
@@ -38,7 +37,33 @@ class Model {
         this.description = data.description;
         this.icon = data.icon;
         this.color = data.color;
+        this.type = data.type || 'standard';
         this.capabilities = data.capabilities || [];
+    }
+
+    createPopupItem() {
+        const item = document.createElement('div');
+        item.className = 'model-item';
+        item.title = this.description;
+
+        const icon = document.createElement('img');
+        icon.src = this.icon;
+        icon.alt = this.name;
+        icon.className = 'model-icon';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'model-name';
+        nameDiv.innerText = this.name;
+
+        item.appendChild(icon);
+        item.appendChild(nameDiv);
+
+        item.addEventListener('click', () => {
+            Model.setCurrentModel(this.id);
+            dom.modelPopup.classList.add('hidden');
+        });
+
+        return item;
     }
 
     static async loadModels() {
@@ -62,22 +87,28 @@ class Model {
     }
 
     static buildPopup() {
-        Model.models.forEach((model) => {
-            const modelItem = document.createElement('div');
-            modelItem.className = 'model-item';
-            modelItem.innerHTML = `
-                <img src="${model.icon}" alt="${model.name}" class="model-icon" style="background-color: ${model.color};">
-                <div class="model-info">
-                    <h3 class="model-name">${model.name}</h3>
-                </div>
-            `;
+        const types = Model.models.reduce((acc, model) => {
+            if (!acc.includes(model.type)) {
+                acc.push(model.type);
+            }
+            return acc;
+        }, []);
 
-            modelItem.addEventListener('click', () => {
-                Model.setCurrentModel(model.id);
-                dom.modelPopup.classList.add('hidden');
-            });
+        dom.modelPopup.innerHTML = ''; // clear existing content
 
-            dom.modelList.appendChild(modelItem);
+        types.forEach((type) => {
+            const typeSection = document.createElement('div');
+            typeSection.className = 'model-list-section';
+            typeSection.innerHTML = `<h2>${type.charAt(0).toUpperCase() + type.slice(1)}</h2>`;
+            const typeList = document.createElement('div');
+            typeList.className = 'model-list';
+            typeSection.appendChild(typeList);
+            dom.modelPopup.appendChild(typeSection);
+            Model.models
+                .filter((model) => model.type === type)
+                .forEach((model) => {
+                    typeList.appendChild(model.createPopupItem());
+                });
         });
 
         dom.modelSelect.addEventListener('click', (e) => {
@@ -85,11 +116,15 @@ class Model {
             dom.modelPopup.classList.toggle('hidden');
 
             // click outside to close
-            document.addEventListener('click', (event) => {
-                if (!dom.modelPopup.contains(event.target) && !dom.modelSelect.contains(event.target)) {
-                    dom.modelPopup.classList.add('hidden');
-                }
-            }, { once: true });
+            document.addEventListener(
+                'click',
+                (event) => {
+                    if (!dom.modelPopup.contains(event.target) && !dom.modelSelect.contains(event.target)) {
+                        dom.modelPopup.classList.add('hidden');
+                    }
+                },
+                { once: true }
+            );
         });
     }
 
@@ -397,8 +432,8 @@ class MessageView {
     }
 
     addToDOM() {
-        this.container.insertBefore(this.elements.container, dom.endSpacer);
-        dom.messagesViewport.scrollTop = dom.messagesViewport.scrollHeight;
+        this.container.appendChild(this.elements.container);
+        window.scrollTo(0, document.body.scrollHeight);
     }
 }
 
@@ -522,6 +557,8 @@ function getResponse(conversation) {
     streamOpenAIResponse(conversation, botMessage).catch((error) => {
         botMessage.setText('**Error:** ' + error.message);
         botMessage.setType('error');
+    }).then(() => {
+        window.scrollTo(0, document.body.scrollHeight);
     });
 }
 
@@ -533,7 +570,6 @@ dom.newChatButton.addEventListener('click', (e) => {
     e.preventDefault();
     dom.mainDiv.classList.remove('chat');
     dom.messagesDiv.innerHTML = '';
-    dom.messagesDiv.appendChild(dom.endSpacer);
     dom.promptInput.value = '';
     dom.promptInput.style.height = 'auto';
     conversation = new Conversation();

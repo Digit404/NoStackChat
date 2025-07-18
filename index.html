@@ -23,18 +23,6 @@
             <h1 class="title">Static GPT</h1>
             <p class="description">A serverless frontend for the OpenAI chat models.</p>
         </div>
-        <div id="messages-viewport">
-            <div id="messages">
-                <div id="end-spacer"></div>
-            </div>
-        </div>
-        <div class="controls-container">
-            <textarea id="prompt" placeholder="Enter prompt..." autocomplete="off" rows="1"></textarea>
-            <div class="toolbar">
-                <button id="send" class="icon">send</button>
-                <button class="icon hidden" id="add">add</button>
-            </div>
-        </div>
         <div id=key-block class="collapsed">
             <button class="icon" id="key-button">key</button>
             <input type="password" id="api-key" placeholder="Enter OpenAI API key" autocomplete="off">
@@ -48,6 +36,17 @@
         </button>
         <div id="model-popup" class="hidden">
             <div id="model-list">
+            </div>
+        </div>
+        <div id="messages-viewport">
+            <div id="messages">
+            </div>
+        </div>
+        <div class="controls-container">
+            <textarea id="prompt" placeholder="Enter prompt..." autocomplete="off" rows="1"></textarea>
+            <div class="toolbar">
+                <button id="send" class="icon">send</button>
+                <button class="icon hidden" id="add">add</button>
             </div>
         </div>
     </div>
