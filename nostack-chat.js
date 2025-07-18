@@ -99,10 +99,14 @@ class Model {
         infoPopup.style.left = `${x - 10}px`;
         infoPopup.style.top = `${y - 10}px`;
 
-        infoPopup.addEventListener('mouseleave', () => {
-            infoPopup.remove();
-        }, { once: true });
-        
+        infoPopup.addEventListener(
+            'mouseleave',
+            () => {
+                infoPopup.remove();
+            },
+            { once: true }
+        );
+
         document.body.appendChild(infoPopup);
     }
 
@@ -377,10 +381,14 @@ class MessageView {
             this.elements.messageDiv.classList.add('pending');
         } else {
             this.elements.messageDiv.classList.remove('pending');
+            this.elements.messageDiv.classList.remove('error');
             this.elements.messageDiv.innerHTML = this.message.html || this.message.text;
+
             if (window.hljs) {
                 hljs.highlightAll();
             }
+
+            this.addCopyButtons();
         }
     }
 
@@ -417,6 +425,46 @@ class MessageView {
                     this.elements.copyButton.innerText = 'content_copy';
                 }, 2000);
             });
+    }
+
+    addCopyButtons() {
+        for (const block of this.elements.messageDiv.querySelectorAll('pre:has(code)')) {
+            if (block.parentNode.classList.contains('code-wrapper')) {
+                continue; // already wrapped
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-wrapper';
+
+            block.parentNode.insertBefore(wrapper, block);
+            wrapper.appendChild(block);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'icon button copy-button corner-button';
+            copyButton.innerText = 'content_copy';
+            wrapper.appendChild(copyButton);
+
+            console.log('Adding copy button to block:', wrapper);
+
+            copyButton.addEventListener('click', () => {
+                const codeText = block.innerText || block.textContent;
+                navigator.clipboard
+                    .writeText(codeText)
+                    .then(() => {
+                        copyButton.innerText = 'check';
+                        setTimeout(() => {
+                            copyButton.innerText = 'content_copy';
+                        }, 2000);
+                    })
+                    .catch((err) => {
+                        console.error('Failed to copy code: ', err);
+                        copyButton.innerText = 'error';
+                        setTimeout(() => {
+                            copyButton.innerText = 'content_copy';
+                        }, 2000);
+                    });
+            });
+        }
     }
 
     edit() {
@@ -549,6 +597,8 @@ async function streamOpenAIResponse(conversation, botMessage) {
             if (window.hljs) {
                 hljs.highlightAll();
             }
+
+            botMessage.view.addCopyButtons();
         } else if (!scheduled) {
             scheduled = true;
             setTimeout(() => {
@@ -594,12 +644,14 @@ async function streamOpenAIResponse(conversation, botMessage) {
 
 function getResponse(conversation) {
     const botMessage = conversation.getLastMessage();
-    streamOpenAIResponse(conversation, botMessage).catch((error) => {
-        botMessage.setText('**Error:** ' + error.message);
-        botMessage.setType('error');
-    }).then(() => {
-        window.scrollTo(0, document.body.scrollHeight);
-    });
+    streamOpenAIResponse(conversation, botMessage)
+        .catch((error) => {
+            botMessage.setText('**Error:** ' + error.message);
+            botMessage.setType('error');
+        })
+        .then(() => {
+            window.scrollTo(0, document.body.scrollHeight);
+        });
 }
 
 dom.apiKeyButton.addEventListener('click', () => {

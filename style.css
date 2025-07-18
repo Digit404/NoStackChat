@@ -197,6 +197,7 @@ table tr:last-child td:last-child {
     display: flex;
     gap: 10px;
     align-items: center;
+    z-index: 10;
 }
 
 #model-popup {
@@ -344,11 +345,6 @@ table tr:last-child td:last-child {
     border-radius: 20px 20px 0 20px;
 }
 
-.message.user pre code {
-    background-color: #111112;
-    color: #fff;
-}
-
 .message.bot {
     align-self: flex-start;
     border-radius: 20px 20px 20px 0;
@@ -371,6 +367,7 @@ table tr:last-child td:last-child {
 .message:has(div),
 .message:has(p:nth-child(n+2)) {
     width: var(--message-width);
+    max-width: 90%;
 }
 
 .message.bot.pending {
@@ -410,6 +407,15 @@ table tr:last-child td:last-child {
 
 .message.error .message-button {
     display: none;
+}
+
+.code-wrapper {
+    position: relative;
+}
+
+.corner-button {
+    padding: 5px;
+    cursor: pointer;
 }
 
 .pending-bar {
@@ -478,6 +484,7 @@ table tr:last-child td:last-child {
     background-color: var(--fg-color);
     border-radius: var(--border-radius);
     outline: var(--contrast-outline);
+    z-index: 10;
 }
 
 #key-block:has(#api-key:focus) {
@@ -529,6 +536,7 @@ table tr:last-child td:last-child {
     align-items: center;
     cursor: pointer;
     outline: var(--contrast-outline);
+    z-index: 10;
 }
 
 #api-key {
