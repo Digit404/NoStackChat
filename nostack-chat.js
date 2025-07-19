@@ -195,6 +195,8 @@ class Model {
 class Conversation {
     constructor() {
         this.messages = [];
+        this.generating = false;
+        this.abortController = null;
     }
 
     newMessage(text, type = 'user', pending = false) {
@@ -239,6 +241,14 @@ class Conversation {
             }
             this.messages.splice(index + 1);
         }
+    }
+
+    interrupt() {
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+        this.generating = false;
     }
 }
 
@@ -539,11 +549,14 @@ document.getElementById('popup-close').onclick = hidePopup;
 async function streamOpenAIResponse(conversation, botMessage) {
     const messages = conversation.toAPIFormat();
     const apiKey = dom.apiKeyInput.value.trim();
+
     if (!apiKey) {
         botMessage.setText('API key is required.');
         botMessage.setType('error');
         return;
     }
+
+    conversation.abortController = new AbortController();
 
     const requestBody = {
         model: Model.getCurrentModel().id,
@@ -552,7 +565,6 @@ async function streamOpenAIResponse(conversation, botMessage) {
     };
 
     let response;
-
     try {
         response = await fetch(OPENAI_API_URL, {
             method: 'POST',
@@ -561,8 +573,12 @@ async function streamOpenAIResponse(conversation, botMessage) {
                 Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify(requestBody),
+            signal: conversation.abortController.signal,
         });
     } catch (err) {
+        if (err.name === 'AbortError') {
+            return;
+        }
         botMessage.setText('API request failed.');
         botMessage.setType('error');
         return;
@@ -608,32 +624,41 @@ async function streamOpenAIResponse(conversation, botMessage) {
         }
     }
 
-    while (!done) {
-        let { value, done: streamDone } = await reader.read();
-        if (streamDone) break;
-        buffer += decoder.decode(value, { stream: true });
-        let lines = buffer.split('\n');
+    try {
+        while (!done) {
+            let { value, done: streamDone } = await reader.read();
+            if (streamDone) break;
 
-        buffer = lines.pop();
+            buffer += decoder.decode(value, { stream: true });
+            let lines = buffer.split('\n');
+            buffer = lines.pop();
 
-        for (let line of lines) {
-            line = line.trim();
-            if (!line) continue;
-            if (line === 'data: [DONE]') {
-                done = true;
-                break;
-            }
-            if (!line.startsWith('data: ')) continue;
-            try {
-                const payload = JSON.parse(line.slice(6));
-                const content = payload.choices?.[0]?.delta?.content;
-                if (content) {
-                    rawOutput += content;
-                    scheduleRender();
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                if (line === 'data: [DONE]') {
+                    done = true;
+                    break;
                 }
-            } catch (err) {
-                continue;
+                if (!line.startsWith('data: ')) continue;
+
+                try {
+                    const payload = JSON.parse(line.slice(6));
+                    const content = payload.choices?.[0]?.delta?.content;
+                    if (content) {
+                        rawOutput += content;
+                        scheduleRender();
+                    }
+                } catch (err) {
+                    continue;
+                }
             }
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            // Just stop here, don't change anything
+        } else {
+            throw err;
         }
     }
 
@@ -644,13 +669,21 @@ async function streamOpenAIResponse(conversation, botMessage) {
 
 function getResponse(conversation) {
     const botMessage = conversation.getLastMessage();
+
+    conversation.generating = true;
+    dom.sendButton.innerText = 'stop';
+
     streamOpenAIResponse(conversation, botMessage)
         .catch((error) => {
-            botMessage.setText('**Error:** ' + error.message);
-            botMessage.setType('error');
+            if (error.name !== 'AbortError') {
+                botMessage.setText('**Error:** ' + error.message);
+                botMessage.setType('error');
+            }
         })
         .then(() => {
             window.scrollTo(0, document.body.scrollHeight);
+            conversation.generating = false;
+            dom.sendButton.innerText = 'send';
         });
 }
 
@@ -682,6 +715,13 @@ dom.promptInput.addEventListener('keydown', (e) => {
 });
 
 dom.sendButton.addEventListener('click', () => {
+    if (conversation.generating) {
+        // stop generating if already generating
+        conversation.interrupt();
+        dom.sendButton.innerText = 'send';
+        return;
+    }
+
     const prompt = dom.promptInput.value.trim();
 
     if (!prompt) {
