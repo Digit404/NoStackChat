@@ -28,6 +28,20 @@
         ]
     },
     {
+        "id": "gpt-4o-search-preview",
+        "provider": "OpenAI",
+        "name": "SearchGPT",
+        "description": "GPT-4o with search capabilities.",
+        "icon": "/res/GPT_search.png",
+        "color": "#1A7ACF",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "nonstrict",
+            "search"
+        ]
+    },
+    {
         "id": "gpt-4.1-mini",
         "provider": "OpenAI",
         "name": "GPT-4.1 Mini",
@@ -39,7 +53,7 @@
             "streaming",
             "vision",
             "nonstrict"
-        ]   
+        ]
     },
     {
         "id": "gpt-4.1-nano",
@@ -53,7 +67,7 @@
             "streaming",
             "vision",
             "nonstrict"
-        ]   
+        ]
     },
     {
         "id": "o3",

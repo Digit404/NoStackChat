@@ -3,6 +3,7 @@ const dom = {
     messagesDiv: document.getElementById('messages'),
     messagesViewport: document.getElementById('messages-viewport'),
 
+    pendingImagesContainer: document.getElementById('pending-images-container'),
     promptInput: document.getElementById('prompt'),
     sendButton: document.getElementById('send'),
     addButton: document.getElementById('add'),
@@ -199,13 +200,16 @@ class Conversation {
         this.abortController = null;
     }
 
-    newMessage(text, type = 'user', pending = false) {
-        const message = new Message(text, type, pending);
+    newMessage(type = 'user', pending = false) {
+        const message = new Message(type);
+        if (pending) message.setPending();
         this.messages.push(message);
 
-        const view = new MessageView(message, dom.messagesDiv, this);
-        message.view = view;
+        return message;
+    }
 
+    addMessageToDOM(message) {
+        const view = new MessageView(message, dom.messagesDiv, this);
         return message;
     }
 
@@ -214,10 +218,7 @@ class Conversation {
     }
 
     toAPIFormat() {
-        return this.messages.map((msg) => ({
-            role: msg.type === 'user' ? 'user' : 'assistant',
-            content: msg.text,
-        }));
+        return this.messages.map((msg) => msg.toAPIFormat());
     }
 
     removeMessage(id) {
@@ -255,47 +256,74 @@ class Conversation {
 class Message {
     static ticker = 0;
 
-    constructor(text, type = 'user', pending = false) {
+    constructor(type = 'user') {
         this.id = Message.ticker++;
-        this.text = text;
         this.type = type;
-        this.pending = pending;
-        this.html = null;
+        this.pending = false;
         this.view = null;
-        this.updateHtml();
+        this.content = {
+            text: '',
+            images: [],
+        };
     }
 
     setText(text) {
-        this.text = text;
+        this.content.text = text;
         this.pending = false;
-        this.updateHtml();
-        if (this.view) {
-            this.view.update();
-        }
+        this.updateView();
+    }
+
+    addImage(imageData) {
+        this.content.images.push(imageData);
+        this.updateView();
     }
 
     setType(type) {
         this.type = type;
-        if (this.view) {
-            this.view.update();
-        }
+        this.updateView();
     }
 
     setPending(pending = true) {
         this.pending = pending;
+        this.updateView();
+    }
+
+    updateView() {
         if (this.view) {
             this.view.update();
         }
     }
 
-    remove() {
-        if (this.messageContainer && this.messageContainer.parentNode) {
-            this.messageContainer.parentNode.removeChild(this.messageContainer);
+    renderContent() {
+        if (this.content.text) {
+            return DOMPurify.sanitize(md.render(this.content.text));
         }
+        return '';
     }
 
-    updateHtml() {
-        this.html = DOMPurify.sanitize(md.render(this.text));
+    toAPIFormat() {
+        let content = [];
+
+        if (this.content.text) {
+            content.push({
+                type: 'text',
+                text: this.content.text,
+            });
+        }
+
+        this.content.images.forEach((img) => {
+            content.push({
+                type: 'image_url',
+                image_url: {
+                    url: img.src,
+                },
+            });
+        });
+
+        return {
+            role: this.type === 'user' ? 'user' : 'assistant',
+            content: content.length === 1 && content[0].type === 'text' ? content[0].text : content,
+        };
     }
 }
 
@@ -307,6 +335,9 @@ class MessageView {
         this.elements = {};
         this.render();
         this.addToDOM();
+        this.editing = false;
+
+        this.message.view = this;
     }
 
     createButton(icon, onClick, className = '') {
@@ -322,6 +353,9 @@ class MessageView {
         const messageContainer = document.createElement('div');
         messageContainer.classList = `message-container ${this.message.type}`;
 
+        const imagesContainer = document.createElement('div');
+        imagesContainer.className = 'message-images';
+
         // create message div
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${this.message.type}`;
@@ -336,6 +370,7 @@ class MessageView {
         // create standard buttons
         this.elements.editButton = this.createButton('edit', () => this.edit());
         this.elements.saveButton = this.createButton('save', () => this.saveEdit(), 'hidden');
+        this.elements.cancelEditButton = this.createButton('cancel', () => this.cancelEdit(), 'hidden');
         this.elements.copyButton = this.createButton('content_copy', () => this.copyText());
         this.elements.deleteButton = this.createButton('delete', () => {
             this.conversation.removeMessage(this.message.id);
@@ -343,6 +378,7 @@ class MessageView {
         });
 
         // add buttons to container
+        buttonsContainer.appendChild(this.elements.cancelEditButton);
         buttonsContainer.appendChild(this.elements.editButton);
         buttonsContainer.appendChild(this.elements.saveButton);
 
@@ -353,8 +389,9 @@ class MessageView {
                 () => {
                     this.saveEdit();
                     this.conversation.deleteMessagesAfter(this.message.id);
-                    const responseMessage = this.conversation.newMessage('', 'bot');
+                    const responseMessage = this.conversation.newMessage('bot');
                     responseMessage.setPending();
+                    this.conversation.addMessageToDOM(responseMessage);
                     getResponse(this.conversation);
                 },
                 'hidden'
@@ -375,24 +412,59 @@ class MessageView {
         }
 
         // assemble elements
+        messageContainer.appendChild(imagesContainer);
         messageContainer.appendChild(messageDiv);
         messageContainer.appendChild(buttonsContainer);
 
         this.elements.container = messageContainer;
         this.elements.messageDiv = messageDiv;
+        this.elements.imagesContainer = imagesContainer;
         this.elements.buttonsContainer = buttonsContainer;
 
         this.updateContent();
     }
 
     updateContent() {
+        // images
+        this.elements.imagesContainer.innerHTML = '';
+        if (this.message.content.images.length > 0) {
+            this.message.content.images.forEach((img) => {
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'message-image-container';
+                this.elements.imagesContainer.appendChild(imageContainer);
+                const imgElement = document.createElement('img');
+                imgElement.src = img.src;
+                imgElement.alt = 'Uploaded image';
+                imgElement.className = 'message-image';
+                imageContainer.appendChild(imgElement);
+                const removeButton = document.createElement('button');
+                removeButton.className = 'icon remove-image-button';
+                removeButton.innerText = 'close';
+                removeButton.addEventListener('click', () => {
+                    const index = this.message.content.images.indexOf(img);
+                    if (index !== -1) {
+                        this.message.content.images.splice(index, 1);
+                        this.updateContent();
+                    }
+                });
+                imageContainer.appendChild(removeButton);
+            });
+
+            this.elements.imagesContainer.classList.remove('hidden');
+        } else {
+            this.elements.imagesContainer.classList.add('hidden');
+        }
+
+        // text
         if (this.message.pending) {
             this.elements.messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
             this.elements.messageDiv.classList.add('pending');
         } else {
             this.elements.messageDiv.classList.remove('pending');
             this.elements.messageDiv.classList.remove('error');
-            this.elements.messageDiv.innerHTML = this.message.html || this.message.text;
+
+            const textHtml = this.message.content.text ? DOMPurify.sanitize(md.render(this.message.content.text)) : '';
+            this.elements.messageDiv.innerHTML = textHtml;
 
             if (window.hljs) {
                 hljs.highlightAll();
@@ -421,7 +493,7 @@ class MessageView {
         }
 
         navigator.clipboard
-            .writeText(this.message.text)
+            .writeText(this.message.content.text)
             .then(() => {
                 this.elements.copyButton.innerText = 'check';
                 setTimeout(() => {
@@ -482,14 +554,23 @@ class MessageView {
             return;
         }
 
+        this.editing = true;
         this.elements.container.classList.add('editing');
-        this.elements.messageDiv.innerText = this.message.text;
+        this.elements.messageDiv.innerText = this.message.content.text;
         this.elements.messageDiv.contentEditable = 'true';
         this.elements.messageDiv.focus();
         this.elements.saveButton.classList.remove('hidden');
+        this.elements.cancelEditButton.classList.remove('hidden');
         this.elements.editButton.classList.add('hidden');
+        this.elements.copyButton.classList.add('hidden');
+        this.elements.deleteButton.classList.add('hidden');
+
         if (this.elements.resendButton) {
             this.elements.resendButton.classList.remove('hidden');
+        }
+
+        if (this.elements.regenerateButton) {
+            this.elements.regenerateButton.classList.add('hidden');
         }
 
         // move cursor to end of text
@@ -502,7 +583,7 @@ class MessageView {
     }
 
     saveEdit() {
-        if (!this.elements.container.classList.contains('editing')) {
+        if (!this.editing) {
             return;
         }
 
@@ -517,10 +598,48 @@ class MessageView {
         this.elements.messageDiv.contentEditable = 'false';
         this.elements.messageDiv.blur();
         this.elements.saveButton.classList.add('hidden');
+        this.elements.cancelEditButton.classList.add('hidden');
         this.elements.editButton.classList.remove('hidden');
+        this.elements.copyButton.classList.remove('hidden');
+        this.elements.deleteButton.classList.remove('hidden');
+
         if (this.elements.resendButton) {
             this.elements.resendButton.classList.add('hidden');
         }
+
+        if (this.elements.regenerateButton) {
+            this.elements.regenerateButton.classList.remove('hidden');
+        }
+
+        this.editing = false;
+    }
+
+    cancelEdit() {
+        if (!this.editing) {
+            return;
+        }
+
+        this.elements.container.classList.remove('editing');
+        this.elements.messageDiv.innerHTML = this.message.renderContent();
+        this.elements.messageDiv.contentEditable = 'false';
+        this.elements.messageDiv.blur();
+        this.elements.saveButton.classList.add('hidden');
+        this.elements.cancelEditButton.classList.add('hidden');
+        this.elements.editButton.classList.remove('hidden');
+        this.elements.copyButton.classList.remove('hidden');
+        this.elements.deleteButton.classList.remove('hidden');
+
+        if (this.elements.resendButton) {
+            this.elements.resendButton.classList.add('hidden');
+        }
+
+        if (this.elements.regenerateButton) {
+            this.elements.regenerateButton.classList.remove('hidden');
+        }
+
+        this.updateContent();
+
+        this.editing = false;
     }
 
     remove() {
@@ -532,6 +651,63 @@ class MessageView {
     addToDOM() {
         this.container.appendChild(this.elements.container);
         window.scrollTo(0, document.body.scrollHeight);
+    }
+}
+
+class PendingContent {
+    constructor() {
+        this.images = [];
+        this.container = dom.pendingImagesContainer;
+    }
+
+    addImage(imageData) {
+        this.images.push(imageData);
+        this.updateDisplay();
+    }
+
+    clearImages() {
+        this.images = [];
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+        this.container.innerHTML = '';
+
+        if (this.images.length === 0) {
+            this.container.style.display = 'none';
+            return;
+        }
+
+        this.container.style.display = 'flex';
+
+        this.images.forEach((img, index) => {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'pending-image-container';
+
+            const imgElement = document.createElement('img');
+            imgElement.src = img.src;
+            imgElement.alt = 'Pending image';
+            imgElement.className = 'pending-image';
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'icon remove-image-button';
+            removeButton.innerText = 'close';
+            removeButton.addEventListener('click', () => {
+                this.images.splice(index, 1);
+                this.updateDisplay();
+            });
+
+            imgContainer.appendChild(imgElement);
+            imgContainer.appendChild(removeButton);
+            this.container.appendChild(imgContainer);
+        });
+    }
+
+    applyToMessage(message) {
+        this.images.forEach((img) => {
+            message.addImage(img);
+        });
+        this.clearImages();
     }
 }
 
@@ -687,6 +863,15 @@ function getResponse(conversation) {
         });
 }
 
+const pendingContent = new PendingContent();
+
+let conversation = new Conversation();
+
+Model.loadModels().then(() => {
+    Model.buildPopup(dom.modelSelect);
+    Model.setCurrentModel(Model.defaultModel);
+});
+
 dom.apiKeyButton.addEventListener('click', () => {
     dom.apiKeyBlock.classList.toggle('collapsed');
 });
@@ -723,8 +908,9 @@ dom.sendButton.addEventListener('click', () => {
     }
 
     const prompt = dom.promptInput.value.trim();
+    const hasPendingImages = pendingContent.images.length > 0;
 
-    if (!prompt) {
+    if (!prompt && !hasPendingImages) {
         return;
     }
 
@@ -736,9 +922,16 @@ dom.sendButton.addEventListener('click', () => {
         conversation.removeMessage(lastMessage.id);
     }
 
-    conversation.newMessage(prompt, 'user');
-    const responseMessage = conversation.newMessage('', 'bot');
-    responseMessage.setPending();
+    const userMessage = conversation.newMessage('user');
+    if (prompt) {
+        userMessage.setText(prompt);
+    }
+
+    pendingContent.applyToMessage(userMessage);
+    conversation.addMessageToDOM(userMessage);
+
+    const responseMessage = conversation.newMessage('bot', true);
+    conversation.addMessageToDOM(responseMessage);
 
     dom.promptInput.value = '';
     dom.promptInput.style.height = 'auto';
@@ -746,9 +939,29 @@ dom.sendButton.addEventListener('click', () => {
     getResponse(conversation);
 });
 
-let conversation = new Conversation();
+dom.addButton.addEventListener('click', () => {
+    // upload image
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
 
-Model.loadModels().then(() => {
-    Model.buildPopup(dom.modelSelect);
-    Model.setCurrentModel(Model.defaultModel);
+    input.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        Array.from(files).forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    pendingContent.addImage(img);
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    input.click();
 });

@@ -55,8 +55,9 @@ h1 {
 }
 
 a {
-    color: var(--text-color);
+    color: var(--blue);
     font-weight: bold;
+    text-decoration: none;
 }
 
 .message a::after {
@@ -147,6 +148,44 @@ table tr:last-child td:last-child {
         0 50px 0 var(--bg-color);
 }
 
+.pending-images-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pending-image-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.pending-image {
+    width: 100px;
+    height: 100px;
+    background-color: var(--fg-color);
+    border-radius: var(--border-radius);
+    object-fit: cover;
+    position: relative;
+}
+
+.remove-image-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: var(--fg-color);
+    color: var(--text-color);
+    border-radius: 1337px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
 .chat #title-block {
     display: none;
 }
@@ -162,6 +201,7 @@ table tr:last-child td:last-child {
     color: var(--dim-text-color);
     font-size: 1rem;
     font-family: var(--font);
+    user-select: none;
 }
 
 .title {
@@ -218,6 +258,7 @@ table tr:last-child td:last-child {
     width: 90%;
     max-width: 400px;
     overflow-y: auto;
+    user-select: none;
 }
 
 .model-list-section {
@@ -401,12 +442,45 @@ table tr:last-child td:last-child {
     cursor: pointer;
     color: var(--text-color);
     opacity: 0;
-    ;
     transition: opacity 0.2s ease;
+}
+
+.editing .message-button {
+    opacity: 0.25;
 }
 
 .message.error .message-button {
     display: none;
+}
+
+.message-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.message-image-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.message-image {
+    height: 150px;
+    background-color: var(--fg-color);
+    border-radius: var(--border-radius);
+    object-fit: cover;
+}
+
+.message-image-container .remove-image-button {
+    display: none;
+}
+
+.editing .message-image-container .remove-image-button {
+    display: flex;
 }
 
 .code-wrapper {
@@ -455,6 +529,7 @@ table tr:last-child td:last-child {
     flex-direction: row-reverse;
     gap: 10px;
     justify-content: space-between;
+    align-items: center;
 }
 
 .toolbar button {
@@ -473,6 +548,8 @@ table tr:last-child td:last-child {
 .toolbar #send {
     background-color: var(--text-color);
     color: var(--bg-color);
+    width: 35px;
+    height: 35px;
 }
 
 #key-block {
@@ -537,6 +614,7 @@ table tr:last-child td:last-child {
     cursor: pointer;
     outline: var(--contrast-outline);
     z-index: 10;
+    user-select: none;
 }
 
 #api-key {
@@ -632,6 +710,11 @@ table tr:last-child td:last-child {
 
     .model-item:hover {
         background-color: var(--fg-color-hover);
+    }
+
+    .remove-image-button:hover {
+        background-color: var(--red);
+        color: var(--fg-color);
     }
 }
 
