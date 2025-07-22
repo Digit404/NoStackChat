@@ -21,6 +21,17 @@ const dom = {
     currentModel: document.getElementById('current-model'),
     modelPopup: document.getElementById('model-popup'),
     modelList: document.getElementById('model-list'),
+
+    settingsPopup: document.getElementById('settings-popup'),
+    settingsButton: document.getElementById('settings-button'),
+
+    systemPromptInput: document.getElementById('system-prompt'),
+
+    temperatureInput: document.getElementById('temperature'),
+    temperatureValue: document.getElementById('temperature-value'),
+
+    themeSelect: document.getElementById('theme-select'),
+    fontSelect: document.getElementById('font-select'),
 };
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -218,7 +229,13 @@ class Conversation {
     }
 
     toAPIFormat() {
-        return this.messages.map((msg) => msg.toAPIFormat());
+        const conversation =  this.messages.map((msg) => msg.toAPIFormat());
+        const systemPrompt = Conversation.getSystemPrompt();
+        if (systemPrompt) {
+            conversation.unshift(systemPrompt);
+        }
+
+        return conversation;
     }
 
     removeMessage(id) {
@@ -251,6 +268,19 @@ class Conversation {
         }
         this.generating = false;
     }
+
+    static getSystemPrompt() {
+        const systemPrompt = dom.systemPromptInput.value.trim() || "A helpful assistant.";
+        if (systemPrompt) {
+            return {
+                role: 'system',
+                content: systemPrompt,
+            };
+        }
+        return null;
+    }
+
+    static get
 }
 
 class Message {
@@ -324,6 +354,13 @@ class Message {
             role: this.type === 'user' ? 'user' : 'assistant',
             content: content.length === 1 && content[0].type === 'text' ? content[0].text : content,
         };
+    }
+
+    remove() {
+        if (this.view) {
+            this.view.remove();
+            this.view = null;
+        }
     }
 }
 
@@ -715,13 +752,6 @@ function hidePopup() {
     dom.popup.classList.add('hidden');
 }
 
-if (!localStorage.getItem('notWarnedApiKey')) {
-    dom.popup.classList.remove('hidden');
-    localStorage.setItem('notWarnedApiKey', '1');
-}
-
-document.getElementById('popup-close').onclick = hidePopup;
-
 async function streamOpenAIResponse(conversation, botMessage) {
     const messages = conversation.toAPIFormat();
     const apiKey = dom.apiKeyInput.value.trim();
@@ -863,6 +893,20 @@ function getResponse(conversation) {
         });
 }
 
+function getSavedSettings() {
+    const font = localStorage.getItem('font') || 'sans-serif';
+    const theme = localStorage.getItem('theme') || 'light';
+
+    dom.fontSelect.value = font;
+    dom.themeSelect.value = theme;
+
+    document.documentElement.classList.remove('mono', 'slab', 'serif', 'sans-serif');
+    document.documentElement.classList.add(font);
+
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+}
+
 const pendingContent = new PendingContent();
 
 let conversation = new Conversation();
@@ -871,6 +915,15 @@ Model.loadModels().then(() => {
     Model.buildPopup(dom.modelSelect);
     Model.setCurrentModel(Model.defaultModel);
 });
+
+if (!localStorage.getItem('notWarnedApiKey')) {
+    dom.popup.classList.remove('hidden');
+    localStorage.setItem('notWarnedApiKey', '1');
+}
+
+document.getElementById('popup-close').onclick = hidePopup;
+
+getSavedSettings();
 
 dom.apiKeyButton.addEventListener('click', () => {
     dom.apiKeyBlock.classList.toggle('collapsed');
@@ -964,4 +1017,29 @@ dom.addButton.addEventListener('click', () => {
     });
 
     input.click();
+});
+
+dom.settingsButton.addEventListener('click', () => {
+    dom.settingsPopup.classList.toggle('hidden');
+});
+
+dom.fontSelect.addEventListener('change', (e) => {
+    const font = e.target.value;
+    document.documentElement.classList.remove('mono', 'slab', 'serif');
+    document.documentElement.classList.add(font);
+
+    localStorage.setItem('font', font);
+});
+
+dom.themeSelect.addEventListener('change', (e) => {
+    let theme = e.target.value;
+
+    if (theme === 'system') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+
+    localStorage.setItem('theme', theme);
 });

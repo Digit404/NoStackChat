@@ -24,6 +24,7 @@
             <p class="description">A serverless frontend for the OpenAI chat models.</p>
         </div>
         <div id=key-block class="collapsed">
+            <button class="icon" id="settings-button">settings</button>
             <button class="icon" id="key-button">key</button>
             <input type="password" id="api-key" placeholder="Enter OpenAI API key" autocomplete="off">
             <button id="verify-button" class="icon">check</button>
@@ -70,6 +71,44 @@
                 </ul>
             </div>
             <button id="popup-close" class="button pill">OK, got it</button>
+        </div>
+    </div>
+    <div id="settings-popup" class="popup-background hidden">
+        <div id="settings-content" class="popup-content">
+            <h1>Settings</h1>
+            <div class="settings-section">
+                <h2>Generation</h2>
+                <div class="settings-item">
+                    <label for="system-prompt">System prompt</label>
+                    <textarea id="system-prompt" placeholder="A helpful assistant" rows="5"
+                        class="text-input"></textarea>
+                </div>
+                <!-- <div class="settings-item">
+                    <label for="temperature">Temperature</label>
+                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="1" class="small-slider">
+                    <span id="temperature-value">1.0</span>
+                </div> -->
+            </div>
+            <div class="settings-section">
+                <h2>Appearance</h2>
+                <div class="settings-item">
+                    <label for="theme-select">Theme</label>
+                    <select id="theme-select" class="option-select">
+                        <option value="system">System</option>
+                        <option value="dark" class="dark">Dark</option>
+                        <option value="light" class="light">Light</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <label for="font-select">Font</label>
+                    <select id="font-select" class="option-select">
+                        <option value="sans">Sans-serif</option>
+                        <option value="mono" class="mono">Monospace</option>
+                        <option value="serif" class="serif">Serif</option>
+                        <option value="slab" class="slab">Slab Serif</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
     <script src="./nostack-chat.js" defer></script>

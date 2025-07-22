@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,100..900;1,100..900&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Roboto+Slab:wght@100..900&display=swap');
 
 :root {
     --font: "DM Sans", sans-serif;
@@ -50,7 +50,7 @@ h6 {
 
 h1 {
     color: var(--text-color);
-    font-size: 2.5rem;
+    font-size: 2rem;
     text-align: center;
 }
 
@@ -76,37 +76,55 @@ blockquote {
 table {
     width: 100%;
     border-collapse: collapse;
+
+    th,
+    td {
+        padding: 10px;
+        text-align: left;
+    }
+
+    th {
+        background-color: var(--bg-color);
+        border-bottom: 3px solid var(--fg-color);
+    }
+
+    td {
+        background-color: var(--bg-color);
+    }
+
+    tr:first-child th:first-child {
+        border-top-left-radius: var(--border-radius);
+    }
+
+    tr:first-child th:last-child {
+        border-top-right-radius: var(--border-radius);
+    }
+
+    tr:last-child td:first-child {
+        border-bottom-left-radius: var(--border-radius);
+    }
+
+    tr:last-child td:last-child {
+        border-bottom-right-radius: var(--border-radius);
+    }
 }
 
-table th,
-table td {
-    padding: 10px;
-    text-align: left;
+.serif {
+    --font: "Bitter", "Georgia", serif;
 }
 
-table th {
-    background-color: var(--bg-color);
-    border-bottom: 3px solid var(--fg-color);
+.slab {
+    --font: "Roboto Slab", "Georgia", serif;
 }
 
-table td {
-    background-color: var(--bg-color);
+.mono {
+    --font: "Fira Code", "Cascadia Code", monospace;
 }
 
-table tr:first-child th:first-child {
-    border-top-left-radius: var(--border-radius);
-}
+/* specific styles */
 
-table tr:first-child th:last-child {
-    border-top-right-radius: var(--border-radius);
-}
-
-table tr:last-child td:first-child {
-    border-bottom-left-radius: var(--border-radius);
-}
-
-table tr:last-child td:last-child {
-    border-bottom-right-radius: var(--border-radius);
+#dark-mode-button {
+    display: none;
 }
 
 #main {
@@ -141,11 +159,6 @@ table tr:last-child td:last-child {
     bottom: 20px;
     max-width: var(--chat-width);
     width: 95%
-}
-
-.controls-container:has(#prompt:focus) {
-    box-shadow: var(--focus-outline),
-        0 50px 0 var(--bg-color);
 }
 
 .pending-images-container {
@@ -221,6 +234,77 @@ table tr:last-child td:last-child {
     text-align: center;
     justify-content: center;
     font-size: 4rem;
+}
+
+#settings-button {
+    background-color: var(--fg-color);
+    color: var(--text-color);
+    height: 3rem;
+    width: 3rem;
+    font-size: 2rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+#settings-content {
+    display: flex;
+    width: 800px;
+    max-width: 95%;
+    gap: 5px;
+}
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.settings-item:has(textarea) {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+}
+
+#system-prompt {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.15rem;
+    resize: vertical
+}
+
+#temperature {
+    width: 100%;
+    max-width: 50%;
+}
+
+#temperature-value {
+    font-size: 1.25rem;
+    color: var(--text-color);
+    margin-left: 10px;
+}
+
+.settings-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.settings-item label {
+    font-size: 1.25rem;
+    color: var(--text-color);
+}
+
+.settings-item .option-select {
+    width: 100%;
+    max-width: 200px;
 }
 
 #model-select {
@@ -405,8 +489,7 @@ table tr:last-child td:last-child {
 .message:has(blockquote),
 .message:has(ul),
 .message:has(ol),
-.message:has(div),
-.message:has(p:nth-child(n+2)) {
+.message:has(div) {
     width: var(--message-width);
     max-width: 90%;
 }
@@ -421,7 +504,7 @@ table tr:last-child td:last-child {
     max-width: 90%;
 }
 
-.message.error {
+.error .message {
     background-color: var(--red);
     width: 100%;
     max-width: 100%;
@@ -447,10 +530,6 @@ table tr:last-child td:last-child {
 
 .editing .message-button {
     opacity: 0.25;
-}
-
-.message.error .message-button {
-    display: none;
 }
 
 .message-images {
@@ -561,28 +640,26 @@ table tr:last-child td:last-child {
     background-color: var(--fg-color);
     border-radius: var(--border-radius);
     outline: var(--contrast-outline);
-    z-index: 10;
-}
+    z-index: 11;
 
-#key-block:has(#api-key:focus) {
-    box-shadow: var(--focus-outline);
-}
+    &:has(#api-key:focus) {
+        box-shadow: var(--focus-outline);
+    }
 
-#key-block.collapsed #api-key {
-    width: 0;
-    padding: 0;
-    opacity: 0;
-}
+    &.collapsed {
 
-#key-block.collapsed #key-button {
-    border-radius: var(--border-radius);
-}
+        #api-key,
+        #verify-button {
+            width: 0;
+            padding: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
 
-#key-block.collapsed #verify-button {
-    width: 0;
-    padding: 0;
-    opacity: 0;
-    pointer-events: none;
+        #key-button {
+            border-radius: var(--border-radius);
+        }
+    }
 }
 
 #key-button {
@@ -685,11 +762,9 @@ table tr:last-child td:last-child {
     }
 
     #key-button:hover,
-    #new-chat-button:hover {
-        background-color: var(--fg-color-hover);
-    }
-
-    #verify-button:hover {
+    #new-chat-button:hover,
+    #verify-button:hover,
+    #settings-button:hover {
         background-color: var(--fg-color-hover);
     }
 
