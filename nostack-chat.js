@@ -896,6 +896,7 @@ function getResponse(conversation) {
 function getSavedSettings() {
     const font = localStorage.getItem('font') || 'sans-serif';
     const theme = localStorage.getItem('theme') || 'light';
+    const systemPrompt = localStorage.getItem('systemPrompt');
 
     dom.fontSelect.value = font;
     dom.themeSelect.value = theme;
@@ -905,6 +906,10 @@ function getSavedSettings() {
 
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
+
+    if (systemPrompt) {
+        dom.systemPromptInput.value = systemPrompt;
+    }
 }
 
 const pendingContent = new PendingContent();
@@ -1042,4 +1047,8 @@ dom.themeSelect.addEventListener('change', (e) => {
     document.documentElement.classList.add(theme);
 
     localStorage.setItem('theme', theme);
+});
+
+dom.systemPromptInput.addEventListener('blur', () => {
+    localStorage.setItem('systemPrompt', dom.systemPromptInput.value.trim());
 });
