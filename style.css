@@ -5,6 +5,29 @@
     --message-width: 900px;
     --chat-width: 1000px;
     --contrast-outline: 5px solid var(--bg-color);
+    --hue: 230;
+    --saturation: 5%;
+}
+
+:root,
+.light,
+.dark .dark {
+    --fg-color: hsla(var(--hue), var(--saturation), 97%);
+    --bg-color: hsla(var(--hue), var(--saturation), 90%);
+    --fg-color-hover: hsla(var(--hue), var(--saturation), 85%);
+    --half-color: hsla(var(--hue), var(--saturation), 50%);
+    --dim-text-color: hsla(var(--hue), var(--saturation), 30%);
+    --text-color: hsla(var(--hue), var(--saturation), 10%);
+    --text-color-hover: hsla(var(--hue), var(--saturation), 5%);
+}
+
+.dark {
+    --bg-color: hsla(var(--hue), var(--saturation), 8%);
+    --fg-color: hsla(var(--hue), var(--saturation), 15%);
+    --fg-color-hover: hsla(var(--hue), var(--saturation), 20%);
+    --dim-text-color: hsla(var(--hue), var(--saturation), 60%);
+    --text-color-hover: hsla(var(--hue), var(--saturation), 80%);
+    --text-color: hsla(var(--hue), var(--saturation), 90%);
 }
 
 body {
@@ -262,6 +285,7 @@ table {
     flex-direction: column;
     gap: 10px;
     padding: 10px;
+    --setting-width: 300px;
 }
 
 .settings-item:has(textarea) {
@@ -277,9 +301,31 @@ table {
     resize: vertical
 }
 
-#temperature {
+.slider-container {
+    width: var(--setting-width);
+    display: flex;
+    justify-content: end;
+}
+
+.slider-container .small-slider {
     width: 100%;
-    max-width: 50%;
+    max-width: var(--setting-width);
+}
+
+.slider-container span {
+    font-size: 1.25rem;
+    width: 50px;
+    text-align: right;
+    color: var(--text-color);
+    margin-left: 10px;
+}
+
+#hue-value::after {
+    content: "°";
+}
+
+#saturation-value::after {
+    content: "%";
 }
 
 #temperature-value {
@@ -304,7 +350,7 @@ table {
 
 .settings-item .option-select {
     width: 100%;
-    max-width: 200px;
+    max-width: var(--setting-width);
 }
 
 #model-select {

@@ -32,6 +32,12 @@ const dom = {
 
     themeSelect: document.getElementById('theme-select'),
     fontSelect: document.getElementById('font-select'),
+
+    hue: document.getElementById('hue'),
+    saturation: document.getElementById('saturation'),
+
+    hueValue: document.getElementById('hue-value'),
+    saturationValue: document.getElementById('saturation-value'),
 };
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -897,15 +903,24 @@ function getSavedSettings() {
     const font = localStorage.getItem('font') || 'sans-serif';
     const theme = localStorage.getItem('theme') || 'light';
     const systemPrompt = localStorage.getItem('systemPrompt');
+    const hue = localStorage.getItem('hue') || '230';
+    const saturation = localStorage.getItem('saturation') || '5';
 
     dom.fontSelect.value = font;
     dom.themeSelect.value = theme;
+    dom.hue.value = hue;
+    dom.hueValue.innerText = hue;
+    dom.saturation.value = saturation;
+    dom.saturationValue.innerText = saturation;
 
     document.documentElement.classList.remove('mono', 'slab', 'serif', 'sans-serif');
     document.documentElement.classList.add(font);
 
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
+
+    document.documentElement.style.setProperty('--hue', hue);
+    document.documentElement.style.setProperty('--saturation', `${saturation}%`);
 
     if (systemPrompt) {
         dom.systemPromptInput.value = systemPrompt;
@@ -1051,4 +1066,19 @@ dom.themeSelect.addEventListener('change', (e) => {
 
 dom.systemPromptInput.addEventListener('blur', () => {
     localStorage.setItem('systemPrompt', dom.systemPromptInput.value.trim());
+});
+
+dom.hue.addEventListener('input', (e) => {
+    const hue = e.target.value;
+    document.documentElement.style.setProperty('--hue', hue);
+    localStorage.setItem('hue', hue);
+    dom.hueValue.innerText = hue;
+});
+
+dom.saturation.addEventListener('input', (e) => {
+    const saturation = e.target.value;
+    document.documentElement.style.setProperty('--saturation', `${saturation}%`);
+    localStorage.setItem('saturation', saturation);
+    console.log('Saturation set to:', saturation);
+    dom.saturationValue.innerText = saturation;
 });
