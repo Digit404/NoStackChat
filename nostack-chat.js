@@ -235,7 +235,7 @@ class Conversation {
     }
 
     toAPIFormat() {
-        const conversation =  this.messages.map((msg) => msg.toAPIFormat());
+        const conversation = this.messages.map((msg) => msg.toAPIFormat());
         const systemPrompt = Conversation.getSystemPrompt();
         if (systemPrompt) {
             conversation.unshift(systemPrompt);
@@ -276,7 +276,7 @@ class Conversation {
     }
 
     static getSystemPrompt() {
-        const systemPrompt = dom.systemPromptInput.value.trim() || "A helpful assistant.";
+        const systemPrompt = dom.systemPromptInput.value.trim() || 'A helpful assistant.';
         if (systemPrompt) {
             return {
                 role: 'system',
@@ -285,8 +285,6 @@ class Conversation {
         }
         return null;
     }
-
-    static get
 }
 
 class Message {
@@ -867,9 +865,7 @@ async function streamOpenAIResponse(conversation, botMessage) {
             }
         }
     } catch (err) {
-        if (err.name === 'AbortError') {
-            // Just stop here, don't change anything
-        } else {
+        if (err.name !== 'AbortError') {
             throw err;
         }
     }
