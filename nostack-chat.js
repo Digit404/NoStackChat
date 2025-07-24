@@ -42,6 +42,7 @@ const dom = {
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const md = window.markdownit();
+md.set({ breaks: true });
 
 class Model {
     static models = [];
@@ -215,56 +216,44 @@ class Conversation {
         this.messages = [];
         this.generating = false;
         this.abortController = null;
-    }
-
-    newMessage(type = 'user', pending = false) {
-        const message = new Message(type);
-        if (pending) message.setPending();
-        this.messages.push(message);
-
-        return message;
-    }
-
-    addMessageToDOM(message) {
-        const view = new MessageView(message, dom.messagesDiv, this);
-        return message;
+        this.pendingContent = new PendingContent();
     }
 
     getLastMessage() {
         return this.messages.length > 0 ? this.messages[this.messages.length - 1] : null;
     }
 
-    toAPIFormat() {
-        const conversation = this.messages.map((msg) => msg.toAPIFormat());
-        const systemPrompt = Conversation.getSystemPrompt();
-        if (systemPrompt) {
-            conversation.unshift(systemPrompt);
-        }
-
-        return conversation;
-    }
-
     removeMessage(id) {
-        const index = this.messages.findIndex((msg) => msg.id === id);
+        const index = this.messages.findIndex((message) => message.id === id);
         if (index !== -1) {
             const message = this.messages[index];
-            message.remove();
+            message.destroy();
             this.messages.splice(index, 1);
         } else {
             console.warn(`Message with id ${id} not found.`);
         }
     }
 
-    deleteMessagesAfter(messageId) {
-        const index = this.messages.findIndex((msg) => msg.id === messageId);
+    removeMessagesAfter(id) {
+        const index = this.messages.findIndex((message) => message.id === id);
         if (index !== -1) {
-            for (let i = index + 1; i < this.messages.length; i++) {
-                if (this.messages[i].view) {
-                    this.messages[i].view.remove();
-                }
+            // remove all messages after the specified id
+            for (let i = this.messages.length - 1; i > index; i--) {
+                this.messages[i].destroy();
+                this.messages.splice(i, 1);
             }
-            this.messages.splice(index + 1);
+        } else {
+            console.warn(`Message with id ${id} not found.`);
         }
+    }
+
+    toAPIFormat() {
+        const conversation = this.messages.map((message) => message.toAPIFormat());
+        const systemPrompt = Conversation.getSystemPrompt();
+        if (systemPrompt) {
+            conversation.unshift(systemPrompt);
+        }
+        return conversation;
     }
 
     interrupt() {
@@ -273,6 +262,179 @@ class Conversation {
             this.abortController = null;
         }
         this.generating = false;
+    }
+
+    send() {
+        if (this.generating) {
+            // stop generating if already generating
+            this.interrupt();
+            dom.sendButton.innerText = 'send';
+            return;
+        }
+
+        const prompt = dom.promptInput.value.trim();
+        const hasPendingImages = this.pendingContent.images.length > 0;
+
+        if (!prompt && !hasPendingImages) {
+            return;
+        }
+
+        // add chat class to mainDiv if not already present
+        dom.mainDiv.classList.add('chat');
+
+        const lastMessage = this.getLastMessage();
+        let userMessage = null;
+
+        if (lastMessage && lastMessage.role === 'user') {
+            // if last message is from user, append to it
+            userMessage = lastMessage;
+        } else {
+            // create a new user message
+            userMessage = new Message(this, 'user');
+            this.messages.push(userMessage);
+        }
+
+        userMessage.addPart('text', prompt);
+
+        if (hasPendingImages) {
+            // apply pending images to the user message
+            this.pendingContent.applyToMessage(userMessage);
+        }
+
+        // clear input
+        dom.promptInput.value = '';
+        dom.promptInput.style.height = 'auto';
+
+        // add user message to DOM
+        userMessage.addToDOM();
+
+        this.createResponse();
+    }
+
+    createResponse() {
+        this.streamResponse()
+            .catch((err) => {
+                if (err.name === 'AbortError') {
+                    // request was aborted, do nothing
+                    return;
+                }
+                // here too
+                console.error('Error during response streaming:', err);
+                this.generating = false;
+                dom.sendButton.innerText = 'send';
+            })
+            .then(() => {
+                this.generating = false;
+                window.scrollTo(0, document.body.scrollHeight);
+                dom.sendButton.innerText = 'send';
+            });
+    }
+
+    async streamResponse() {
+        const BotMessage = new Message(this, 'assistant');
+        this.messages.push(BotMessage);
+        const part = BotMessage.addPart('text', ''); // start with empty text part
+        part.view.setPending(); // set pending state for the part
+        BotMessage.addToDOM();
+
+        this.generating = true;
+        dom.sendButton.innerText = 'stop';
+
+        const model = Model.getCurrentModel();
+
+        const messages = this.toAPIFormat();
+        const apiKey = dom.apiKeyInput.value.trim();
+
+        if (!apiKey) {
+            // change to better error later
+            console.error('API key is required.');
+            this.generating = false;
+            dom.sendButton.innerText = 'send';
+            return;
+        }
+
+        this.abortController = new AbortController();
+
+        const requestBody = {
+            model: model.id,
+            messages: messages,
+            stream: true,
+        };
+
+        let response;
+
+        try {
+            response = await fetch(OPENAI_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify(requestBody),
+                signal: this.abortController.signal,
+            });
+        } catch (error) {
+            // better error handling here too
+            if (err.name === 'AbortError') {
+                return;
+            }
+            console.error('Error fetching response:', error);
+            return;
+        }
+
+        if (!response.ok) {
+            // here too
+            const errorText = await response.text();
+            console.error('Error response from API:', errorText);
+            this.generating = false;
+            dom.sendButton.innerText = 'send';
+            return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+
+        let done = false;
+        let buffer = '';
+
+        while (!done) {
+            let { value, done: streamDone } = await reader.read();
+            if (streamDone) {
+                done = true;
+                break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                if (line === 'data: [DONE]') {
+                    done = true;
+                    break;
+                }
+
+                if (!line.startsWith('data: ')) continue;
+
+                try {
+                    const payload = JSON.parse(line.slice(6));
+                    const content = payload.choices?.[0]?.delta?.content;
+                    if (content) {
+                        if (part.view.pending) {
+                            part.view.pending = false;
+                            part.setContent('');
+                        }
+
+                        BotMessage.parts[0].content += content;
+                        BotMessage.parts[0].updateContent();
+                    }
+                } catch (error) {
+                    continue;
+                }
+            }
+        }
     }
 
     static getSystemPrompt() {
@@ -288,333 +450,239 @@ class Conversation {
 }
 
 class Message {
-    static ticker = 0;
+    static _id = 0;
 
-    constructor(type = 'user') {
-        this.id = Message.ticker++;
-        this.type = type;
-        this.pending = false;
-        this.view = null;
-        this.content = {
-            text: '',
-            images: [],
-        };
+    constructor(conversation, role = 'user') {
+        this.id = Message._id++;
+        this.conversation = conversation;
+        this.role = role;
+
+        this.parts = [];
     }
 
-    setText(text) {
-        this.content.text = text;
-        this.pending = false;
-        this.updateView();
-    }
-
-    addImage(imageData) {
-        this.content.images.push(imageData);
-        this.updateView();
-    }
-
-    setType(type) {
-        this.type = type;
-        this.updateView();
-    }
-
-    setPending(pending = true) {
-        this.pending = pending;
-        this.updateView();
-    }
-
-    updateView() {
-        if (this.view) {
-            this.view.update();
-        }
-    }
-
-    renderContent() {
-        if (this.content.text) {
-            return DOMPurify.sanitize(md.render(this.content.text));
-        }
-        return '';
+    addPart(type, content) {
+        const part = new MessagePart(this, type, content);
+        this.parts.push(part);
+        part.updateContent();
+        return part;
     }
 
     toAPIFormat() {
-        let content = [];
-
-        if (this.content.text) {
-            content.push({
-                type: 'text',
-                text: this.content.text,
-            });
-        }
-
-        this.content.images.forEach((img) => {
-            content.push({
-                type: 'image_url',
-                image_url: {
-                    url: img.src,
-                },
-            });
-        });
+        const content = this.parts.map((part) => part.toAPIFormat());
 
         return {
-            role: this.type === 'user' ? 'user' : 'assistant',
-            content: content.length === 1 && content[0].type === 'text' ? content[0].text : content,
+            role: this.role,
+            content: content,
         };
     }
 
-    remove() {
+    destroy() {
+        this.parts.forEach((part) => {
+            part.destroy();
+        });
+        this.parts = [];
+    }
+
+    removePart(part) {
+        const index = this.parts.indexOf(part);
+
+        if (index !== -1) {
+            part.destroy();
+            this.parts.splice(index, 1);
+        } else {
+            console.warn('Part not found in message.');
+        }
+
+        if (this.parts.length === 0) {
+            this.conversation.removeMessage(this.id);
+        }
+    }
+
+    addToDOM() {
+        // display images first
+        const imageContainer = document.createElement('div');
+        imageContainer.classList.add('message-images', this.role);
+        imageContainer.classList.add('hidden');
+        dom.messagesDiv.appendChild(imageContainer);
+
+        for (const part of this.parts) {
+            if (part.type === 'image') {
+                console.log('image found!');
+                const img = part.view.elements.messageContainer;
+                imageContainer.appendChild(img);
+                imageContainer.classList.remove('hidden');
+            }
+        }
+
+        for (const part of this.parts) {
+            if (part.type !== 'image') {
+                dom.messagesDiv.appendChild(part.view.elements.messageContainer);
+            }
+        }
+    }
+
+    regenerate() {
+        if (this.role !== 'assistant') return;
+
+        this.conversation.removeMessagesAfter(this.id);
+        this.conversation.removeMessage(this.id);
+        this.conversation.generating = false;
+        dom.sendButton.innerText = 'send';
+        this.conversation.createResponse();
+    }
+}
+
+class MessagePart {
+    constructor(message, type, content) {
+        this.message = message;
+        this.type = type;
+        this.content = content;
+        this.view = new PartView(this);
+    }
+
+    setContent(content) {
+        this.content = content;
+        this.updateContent();
+    }
+
+    updateContent() {
+        this.view.pending = false;
+        this.view.elements.messageDiv.classList.remove('pending');
+        if (this.view && this.view.elements.messageDiv) {
+            this.view.elements.messageDiv.innerHTML = DOMPurify.sanitize(md.render(this.content));
+        }
+    }
+
+    toAPIFormat() {
+        if (this.type === 'text') {
+            return { type: 'text', text: this.content };
+        } else if (this.type === 'image') {
+            return { type: 'image_url', image_url: { url: this.content } };
+        }
+        return null;
+    }
+
+    destroy() {
         if (this.view) {
-            this.view.remove();
+            this.view.destroy();
             this.view = null;
         }
     }
 }
 
-class MessageView {
-    constructor(message, container, conversation) {
-        this.message = message;
-        this.container = container;
-        this.conversation = conversation;
+class PartView {
+    constructor(part) {
+        this.part = part;
         this.elements = {};
-        this.render();
-        this.addToDOM();
         this.editing = false;
-
-        this.message.view = this;
+        this.pending = false;
+        this.buttons = {};
+        this.build();
     }
 
-    createButton(icon, onClick, className = '') {
+    createButton(icon, onclick) {
         const button = document.createElement('button');
-        button.classList = `icon message-button ${className}`;
+        button.classList = `icon message-button`;
         button.innerText = icon;
-        button.addEventListener('click', onClick);
+        button.addEventListener('click', onclick);
+        this.elements.buttonContainer.appendChild(button);
         return button;
     }
 
-    render() {
+    build() {
         // create container
-        const messageContainer = document.createElement('div');
-        messageContainer.classList = `message-container ${this.message.type}`;
+        const el = this.elements;
+        el.messageContainer = document.createElement('div');
+        el.messageContainer.classList.add(this.part.message.role);
 
-        const imagesContainer = document.createElement('div');
-        imagesContainer.className = 'message-images';
+        // create message part
+        if (this.part.type === 'text') {
+            el.messageContainer.classList.add('message-container');
+            el.messageDiv = document.createElement('div');
+            el.messageDiv.classList.add('message', this.part.message.role);
 
-        // create message div
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${this.message.type}`;
-        if (this.message.type === 'user') {
-            messageDiv.classList.add('dark');
-        }
-
-        // create buttons container
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.className = 'message-button-container';
-
-        // create standard buttons
-        this.elements.editButton = this.createButton('edit', () => this.edit());
-        this.elements.saveButton = this.createButton('save', () => this.saveEdit(), 'hidden');
-        this.elements.cancelEditButton = this.createButton('cancel', () => this.cancelEdit(), 'hidden');
-        this.elements.copyButton = this.createButton('content_copy', () => this.copyText());
-        this.elements.deleteButton = this.createButton('delete', () => {
-            this.conversation.removeMessage(this.message.id);
-            this.remove();
-        });
-
-        // add buttons to container
-        buttonsContainer.appendChild(this.elements.cancelEditButton);
-        buttonsContainer.appendChild(this.elements.editButton);
-        buttonsContainer.appendChild(this.elements.saveButton);
-
-        // add type-specific buttons
-        if (this.message.type === 'user') {
-            this.elements.resendButton = this.createButton(
-                'send',
-                () => {
-                    this.saveEdit();
-                    this.conversation.deleteMessagesAfter(this.message.id);
-                    const responseMessage = this.conversation.newMessage('bot');
-                    responseMessage.setPending();
-                    this.conversation.addMessageToDOM(responseMessage);
-                    getResponse(this.conversation);
-                },
-                'hidden'
-            );
-            buttonsContainer.appendChild(this.elements.resendButton);
-        }
-
-        buttonsContainer.appendChild(this.elements.copyButton);
-        buttonsContainer.appendChild(this.elements.deleteButton);
-
-        if (this.message.type === 'bot') {
-            this.elements.regenerateButton = this.createButton('refresh', () => {
-                this.conversation.deleteMessagesAfter(this.message.id);
-                this.message.setPending();
-                getResponse(this.conversation);
-            });
-            buttonsContainer.appendChild(this.elements.regenerateButton);
-        }
-
-        // assemble elements
-        messageContainer.appendChild(imagesContainer);
-        messageContainer.appendChild(messageDiv);
-        messageContainer.appendChild(buttonsContainer);
-
-        this.elements.container = messageContainer;
-        this.elements.messageDiv = messageDiv;
-        this.elements.imagesContainer = imagesContainer;
-        this.elements.buttonsContainer = buttonsContainer;
-
-        this.updateContent();
-    }
-
-    updateContent() {
-        // images
-        this.elements.imagesContainer.innerHTML = '';
-        if (this.message.content.images.length > 0) {
-            this.message.content.images.forEach((img) => {
-                const imageContainer = document.createElement('div');
-                imageContainer.className = 'message-image-container';
-                this.elements.imagesContainer.appendChild(imageContainer);
-                const imgElement = document.createElement('img');
-                imgElement.src = img.src;
-                imgElement.alt = 'Uploaded image';
-                imgElement.className = 'message-image';
-                imageContainer.appendChild(imgElement);
-                const removeButton = document.createElement('button');
-                removeButton.className = 'icon remove-image-button';
-                removeButton.innerText = 'close';
-                removeButton.addEventListener('click', () => {
-                    const index = this.message.content.images.indexOf(img);
-                    if (index !== -1) {
-                        this.message.content.images.splice(index, 1);
-                        this.updateContent();
-                    }
-                });
-                imageContainer.appendChild(removeButton);
-            });
-
-            this.elements.imagesContainer.classList.remove('hidden');
-        } else {
-            this.elements.imagesContainer.classList.add('hidden');
-        }
-
-        // text
-        if (this.message.pending) {
-            this.elements.messageDiv.innerHTML = '<div class="pending-bar"></div><div class="pending-bar"></div><div class="pending-bar"></div>';
-            this.elements.messageDiv.classList.add('pending');
-        } else {
-            this.elements.messageDiv.classList.remove('pending');
-            this.elements.messageDiv.classList.remove('error');
-
-            const textHtml = this.message.content.text ? DOMPurify.sanitize(md.render(this.message.content.text)) : '';
-            this.elements.messageDiv.innerHTML = textHtml;
-
-            if (window.hljs) {
-                hljs.highlightAll();
+            if (this.part.message.role === 'user') {
+                el.messageDiv.classList.add('dark');
             }
 
-            this.addCopyButtons();
+            el.buttonContainer = document.createElement('div');
+            el.buttonContainer.classList.add('message-button-container');
+
+            this.buttons.cancelButton = this.createButton('cancel', () => this.cancelEdit());
+            this.buttons.editButton = this.createButton('edit', () => this.edit());
+            this.buttons.saveButton = this.createButton('save', () => this.saveEdit());
+            this.buttons.resendButton = this.createButton('send', () => this.saveAndSend());
+            this.buttons.copyButton = this.createButton('content_copy', () => this.copyText());
+            this.buttons.deleteButton = this.createButton('delete', () => this.part.message.removePart(this.part));
+            this.buttons.regenerateButton = this.createButton('refresh', () => this.part.message.regenerate());
+
+            this.updateButtonVisibility();
+
+            el.messageContainer.appendChild(el.messageDiv);
+            el.messageContainer.appendChild(el.buttonContainer);
+        } else if (this.part.type === 'image') {
+            el.messageContainer.classList.add(`message-image-container`);
+            el.messageDiv = document.createElement('img');
+            el.messageDiv.src = this.part.content;
+            el.messageDiv.alt = 'Uploaded image';
+            el.messageDiv.classList.add('message-image');
+            el.removeButton = document.createElement('button');
+            el.removeButton.classList.add('icon', 'remove-image-button');
+            el.removeButton.innerText = 'close';
+
+            el.removeButton.addEventListener('click', () => {
+                this.part.destroy();
+            });
+
+            el.messageContainer.appendChild(el.messageDiv);
+            el.messageContainer.appendChild(el.removeButton);
         }
     }
 
-    update() {
-        // update classes
-        this.elements.container.classList = `message-container ${this.message.type}`;
-        this.elements.messageDiv.classList = `message ${this.message.type}`;
-        if (this.message.type === 'user') {
-            this.elements.messageDiv.classList.add('dark');
-        } else {
-            this.elements.messageDiv.classList.remove('dark');
+    setPending() {
+        this.pending = true;
+        this.elements.messageDiv.classList.add('pending');
+        this.elements.messageDiv.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+            const pendingBar = document.createElement('div');
+            pendingBar.classList.add('pending-bar');
+            this.elements.messageDiv.appendChild(pendingBar);
         }
-
-        this.updateContent();
+        this.updateButtonVisibility();
     }
 
     copyText() {
-        if (this.message.pending) {
-            return;
-        }
-
-        navigator.clipboard
-            .writeText(this.message.content.text)
-            .then(() => {
-                this.elements.copyButton.innerText = 'check';
-                setTimeout(() => {
-                    this.elements.copyButton.innerText = 'content_copy';
-                }, 2000);
-            })
-            .catch((err) => {
-                console.error('Failed to copy text: ', err);
-                this.elements.copyButton.innerText = 'error';
-                setTimeout(() => {
-                    this.elements.copyButton.innerText = 'content_copy';
-                }, 2000);
-            });
-    }
-
-    addCopyButtons() {
-        for (const block of this.elements.messageDiv.querySelectorAll('pre:has(code)')) {
-            if (block.parentNode.classList.contains('code-wrapper')) {
-                continue; // already wrapped
-            }
-
-            const wrapper = document.createElement('div');
-            wrapper.className = 'code-wrapper';
-
-            block.parentNode.insertBefore(wrapper, block);
-            wrapper.appendChild(block);
-
-            const copyButton = document.createElement('button');
-            copyButton.className = 'icon button copy-button corner-button';
-            copyButton.innerText = 'content_copy';
-            wrapper.appendChild(copyButton);
-
-            console.log('Adding copy button to block:', wrapper);
-
-            copyButton.addEventListener('click', () => {
-                const codeText = block.innerText || block.textContent;
-                navigator.clipboard
-                    .writeText(codeText)
-                    .then(() => {
-                        copyButton.innerText = 'check';
-                        setTimeout(() => {
-                            copyButton.innerText = 'content_copy';
-                        }, 2000);
-                    })
-                    .catch((err) => {
-                        console.error('Failed to copy code: ', err);
-                        copyButton.innerText = 'error';
-                        setTimeout(() => {
-                            copyButton.innerText = 'content_copy';
-                        }, 2000);
-                    });
-            });
+        if (this.part.type === 'text') {
+            navigator.clipboard
+                .writeText(this.part.content)
+                .then(() => {
+                    this.buttons.copyButton.innerText = 'check';
+                    setTimeout(() => {
+                        this.buttons.copyButton.innerText = 'content_copy';
+                    }, 1000);
+                })
+                .catch((err) => {
+                    // really unnecessary error handling
+                    console.error('Failed to copy text: ', err);
+                    this.buttons.copyButton.innerText = 'error';
+                    setTimeout(() => {
+                        this.buttons.copyButton.innerText = 'content_copy';
+                    }, 1000);
+                });
         }
     }
 
     edit() {
-        if (this.message.pending) {
-            return;
-        }
+        if (this.part.type !== 'text' || this.editing) return;
 
         this.editing = true;
-        this.elements.container.classList.add('editing');
-        this.elements.messageDiv.innerText = this.message.content.text;
+        this.elements.messageContainer.classList.add('editing');
+        this.elements.messageDiv.innerText = this.part.content;
         this.elements.messageDiv.contentEditable = 'true';
         this.elements.messageDiv.focus();
-        this.elements.saveButton.classList.remove('hidden');
-        this.elements.cancelEditButton.classList.remove('hidden');
-        this.elements.editButton.classList.add('hidden');
-        this.elements.copyButton.classList.add('hidden');
-        this.elements.deleteButton.classList.add('hidden');
 
-        if (this.elements.resendButton) {
-            this.elements.resendButton.classList.remove('hidden');
-        }
+        this.updateButtonVisibility();
 
-        if (this.elements.regenerateButton) {
-            this.elements.regenerateButton.classList.add('hidden');
-        }
-
-        // move cursor to end of text
         const range = document.createRange();
         const selection = window.getSelection();
         range.selectNodeContents(this.elements.messageDiv);
@@ -624,9 +692,7 @@ class MessageView {
     }
 
     saveEdit() {
-        if (!this.editing) {
-            return;
-        }
+        if (this.part.type !== 'text' || !this.editing) return;
 
         const newText = this.elements.messageDiv.innerHTML
             .replace(/<div>/gi, '\n')
@@ -634,64 +700,70 @@ class MessageView {
             .replace(/<br>/gi, '\n')
             .trim();
 
-        this.message.setText(newText);
-        this.elements.container.classList.remove('editing');
-        this.elements.messageDiv.contentEditable = 'false';
-        this.elements.messageDiv.blur();
-        this.elements.saveButton.classList.add('hidden');
-        this.elements.cancelEditButton.classList.add('hidden');
-        this.elements.editButton.classList.remove('hidden');
-        this.elements.copyButton.classList.remove('hidden');
-        this.elements.deleteButton.classList.remove('hidden');
-
-        if (this.elements.resendButton) {
-            this.elements.resendButton.classList.add('hidden');
-        }
-
-        if (this.elements.regenerateButton) {
-            this.elements.regenerateButton.classList.remove('hidden');
-        }
-
+        this.part.setContent(newText);
         this.editing = false;
+        this.elements.messageDiv.contentEditable = 'false';
+        this.elements.messageContainer.classList.remove('editing');
+        this.elements.messageDiv.blur();
+
+        this.updateButtonVisibility();
+    }
+
+    saveAndSend() {
+        if (this.part.type !== 'text' || !this.editing || this.part.message.role !== 'user') return;
+
+        this.saveEdit();
+        this.part.message.conversation.removeMessagesAfter(this.part.message.id);
+        this.part.message.conversation.createResponse();
     }
 
     cancelEdit() {
-        if (!this.editing) {
-            return;
-        }
-
-        this.elements.container.classList.remove('editing');
-        this.elements.messageDiv.innerHTML = this.message.renderContent();
-        this.elements.messageDiv.contentEditable = 'false';
-        this.elements.messageDiv.blur();
-        this.elements.saveButton.classList.add('hidden');
-        this.elements.cancelEditButton.classList.add('hidden');
-        this.elements.editButton.classList.remove('hidden');
-        this.elements.copyButton.classList.remove('hidden');
-        this.elements.deleteButton.classList.remove('hidden');
-
-        if (this.elements.resendButton) {
-            this.elements.resendButton.classList.add('hidden');
-        }
-
-        if (this.elements.regenerateButton) {
-            this.elements.regenerateButton.classList.remove('hidden');
-        }
-
-        this.updateContent();
+        if (this.part.type !== 'text' || !this.editing) return;
 
         this.editing = false;
+        this.elements.messageDiv.contentEditable = 'false';
+        this.elements.messageContainer.classList.remove('editing');
+        this.part.updateContent();
+        this.elements.messageDiv.blur();
+
+        this.updateButtonVisibility();
     }
 
-    remove() {
-        if (this.elements.container && this.elements.container.parentNode) {
-            this.elements.container.parentNode.removeChild(this.elements.container);
+    updateButtonVisibility() {
+        const b = this.buttons;
+        if (this.part.type === 'text') {
+            if (this.editing) {
+                b.saveButton.classList.remove('hidden');
+                b.cancelButton.classList.remove('hidden');
+                b.editButton.classList.add('hidden');
+
+                if (this.part.message.role === 'user') {
+                    b.resendButton.classList.remove('hidden');
+                    b.regenerateButton.classList.add('hidden');
+                } else if (this.part.message.role === 'assistant') {
+                    b.resendButton.classList.add('hidden');
+                    b.regenerateButton.classList.remove('hidden');
+                }
+            } else {
+                b.saveButton.classList.add('hidden');
+                b.cancelButton.classList.add('hidden');
+                b.editButton.classList.remove('hidden');
+                b.resendButton.classList.add('hidden');
+
+                if (this.part.message.role === 'user') {
+                    b.regenerateButton.classList.add('hidden');
+                } else if (this.part.message.role === 'assistant') {
+                    b.regenerateButton.classList.remove('hidden');
+                }
+            }
         }
     }
 
-    addToDOM() {
-        this.container.appendChild(this.elements.container);
-        window.scrollTo(0, document.body.scrollHeight);
+    destroy() {
+        if (this.elements.messageContainer) {
+            this.elements.messageContainer.remove();
+            this.elements = {};
+        }
     }
 }
 
@@ -745,154 +817,14 @@ class PendingContent {
     }
 
     applyToMessage(message) {
+        if (this.images.length === 0) return;
+
         this.images.forEach((img) => {
-            message.addImage(img);
+            message.addPart('image', img.src);
         });
+
         this.clearImages();
     }
-}
-
-function hidePopup() {
-    dom.popup.classList.add('hidden');
-}
-
-async function streamOpenAIResponse(conversation, botMessage) {
-    const messages = conversation.toAPIFormat();
-    const apiKey = dom.apiKeyInput.value.trim();
-
-    if (!apiKey) {
-        botMessage.setText('API key is required.');
-        botMessage.setType('error');
-        return;
-    }
-
-    conversation.abortController = new AbortController();
-
-    const requestBody = {
-        model: Model.getCurrentModel().id,
-        messages,
-        stream: true,
-    };
-
-    let response;
-    try {
-        response = await fetch(OPENAI_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify(requestBody),
-            signal: conversation.abortController.signal,
-        });
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            return;
-        }
-        botMessage.setText('API request failed.');
-        botMessage.setType('error');
-        return;
-    }
-
-    if (!response.body) {
-        botMessage.setText('Streaming not supported by browser or API');
-        botMessage.setType('error');
-        return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-
-    let buffer = '';
-    let rawOutput = '';
-    let done = false;
-
-    // stream updates
-    const messageElement = botMessage.view.elements.messageDiv;
-    messageElement.classList.remove('pending');
-    messageElement.innerHTML = '';
-
-    let lastRender = 0;
-    let scheduled = false;
-
-    function scheduleRender(force = false) {
-        const now = Date.now();
-        if (force || now - lastRender > 60) {
-            messageElement.innerHTML = DOMPurify.sanitize(md.render(rawOutput));
-            lastRender = now;
-            if (window.hljs) {
-                hljs.highlightAll();
-            }
-
-            botMessage.view.addCopyButtons();
-        } else if (!scheduled) {
-            scheduled = true;
-            setTimeout(() => {
-                scheduleRender(true);
-                scheduled = false;
-            }, 65);
-        }
-    }
-
-    try {
-        while (!done) {
-            let { value, done: streamDone } = await reader.read();
-            if (streamDone) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            let lines = buffer.split('\n');
-            buffer = lines.pop();
-
-            for (let line of lines) {
-                line = line.trim();
-                if (!line) continue;
-                if (line === 'data: [DONE]') {
-                    done = true;
-                    break;
-                }
-                if (!line.startsWith('data: ')) continue;
-
-                try {
-                    const payload = JSON.parse(line.slice(6));
-                    const content = payload.choices?.[0]?.delta?.content;
-                    if (content) {
-                        rawOutput += content;
-                        scheduleRender();
-                    }
-                } catch (err) {
-                    continue;
-                }
-            }
-        }
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            throw err;
-        }
-    }
-
-    scheduleRender(true);
-
-    botMessage.setText(rawOutput);
-}
-
-function getResponse(conversation) {
-    const botMessage = conversation.getLastMessage();
-
-    conversation.generating = true;
-    dom.sendButton.innerText = 'stop';
-
-    streamOpenAIResponse(conversation, botMessage)
-        .catch((error) => {
-            if (error.name !== 'AbortError') {
-                botMessage.setText('**Error:** ' + error.message);
-                botMessage.setType('error');
-            }
-        })
-        .then(() => {
-            window.scrollTo(0, document.body.scrollHeight);
-            conversation.generating = false;
-            dom.sendButton.innerText = 'send';
-        });
 }
 
 function getSavedSettings() {
@@ -923,8 +855,6 @@ function getSavedSettings() {
     }
 }
 
-const pendingContent = new PendingContent();
-
 let conversation = new Conversation();
 
 Model.loadModels().then(() => {
@@ -932,15 +862,9 @@ Model.loadModels().then(() => {
     Model.setCurrentModel(Model.defaultModel);
 });
 
-if (!localStorage.getItem('notWarnedApiKey')) {
-    dom.popup.classList.remove('hidden');
-    localStorage.setItem('notWarnedApiKey', '1');
-}
-
-document.getElementById('popup-close').onclick = hidePopup;
-
 getSavedSettings();
 
+// buttons
 dom.apiKeyButton.addEventListener('click', () => {
     dom.apiKeyBlock.classList.toggle('collapsed');
 });
@@ -952,60 +876,6 @@ dom.newChatButton.addEventListener('click', (e) => {
     dom.promptInput.value = '';
     dom.promptInput.style.height = 'auto';
     conversation = new Conversation();
-});
-
-// resize prompt field on input
-dom.promptInput.addEventListener('input', () => {
-    dom.promptInput.style.height = 'auto';
-    dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
-});
-
-// send on enter key press
-dom.promptInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        dom.sendButton.click();
-    }
-});
-
-dom.sendButton.addEventListener('click', () => {
-    if (conversation.generating) {
-        // stop generating if already generating
-        conversation.interrupt();
-        dom.sendButton.innerText = 'send';
-        return;
-    }
-
-    const prompt = dom.promptInput.value.trim();
-    const hasPendingImages = pendingContent.images.length > 0;
-
-    if (!prompt && !hasPendingImages) {
-        return;
-    }
-
-    dom.mainDiv.classList.add('chat');
-
-    const lastMessage = conversation.getLastMessage();
-
-    if (lastMessage && lastMessage.type === 'error') {
-        conversation.removeMessage(lastMessage.id);
-    }
-
-    const userMessage = conversation.newMessage('user');
-    if (prompt) {
-        userMessage.setText(prompt);
-    }
-
-    pendingContent.applyToMessage(userMessage);
-    conversation.addMessageToDOM(userMessage);
-
-    const responseMessage = conversation.newMessage('bot', true);
-    conversation.addMessageToDOM(responseMessage);
-
-    dom.promptInput.value = '';
-    dom.promptInput.style.height = 'auto';
-
-    getResponse(conversation);
 });
 
 dom.addButton.addEventListener('click', () => {
@@ -1025,7 +895,7 @@ dom.addButton.addEventListener('click', () => {
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    pendingContent.addImage(img);
+                    conversation.pendingContent.addImage(img);
                 };
             };
             reader.readAsDataURL(file);
@@ -1035,6 +905,24 @@ dom.addButton.addEventListener('click', () => {
     input.click();
 });
 
+// prompt event listeners
+dom.promptInput.addEventListener('input', () => {
+    dom.promptInput.style.height = 'auto';
+    dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
+});
+
+dom.sendButton.addEventListener('click', () => {
+    conversation.send();
+});
+
+dom.promptInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        conversation.send();
+    }
+});
+
+// settings
 dom.settingsButton.addEventListener('click', () => {
     dom.settingsPopup.classList.toggle('hidden');
 });
@@ -1075,6 +963,5 @@ dom.saturation.addEventListener('input', (e) => {
     const saturation = e.target.value;
     document.documentElement.style.setProperty('--saturation', `${saturation}%`);
     localStorage.setItem('saturation', saturation);
-    console.log('Saturation set to:', saturation);
     dom.saturationValue.innerText = saturation;
 });

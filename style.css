@@ -211,8 +211,8 @@ table {
     position: absolute;
     top: 5px;
     right: 5px;
-    background-color: var(--fg-color);
-    color: var(--text-color);
+    background-color: #000;
+    color: #fff;
     border-radius: 1337px;
     width: 20px;
     height: 20px;
@@ -220,6 +220,7 @@ table {
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    opacity: 0.75;
 }
 
 .chat #title-block {
@@ -516,7 +517,7 @@ table {
     border-radius: 20px 20px 0 20px;
 }
 
-.message.bot {
+.message.assistant {
     align-self: flex-start;
     border-radius: 20px 20px 20px 0;
     background-color: var(--fg-color);
@@ -540,7 +541,7 @@ table {
     max-width: 90%;
 }
 
-.message.bot.pending {
+.message.assistant.pending {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -585,6 +586,10 @@ table {
     margin-bottom: 8px;
 }
 
+.message-images.user {
+    justify-content: flex-end;
+}
+
 .message-image-container {
     position: relative;
     display: flex;
@@ -598,14 +603,6 @@ table {
     background-color: var(--fg-color);
     border-radius: var(--border-radius);
     object-fit: cover;
-}
-
-.message-image-container .remove-image-button {
-    display: none;
-}
-
-.editing .message-image-container .remove-image-button {
-    display: flex;
 }
 
 .code-wrapper {
@@ -836,6 +833,7 @@ table {
     .remove-image-button:hover {
         background-color: var(--red);
         color: var(--fg-color);
+        opacity: 1;
     }
 }
 
