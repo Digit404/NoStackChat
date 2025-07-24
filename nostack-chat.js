@@ -16,6 +16,7 @@ const dom = {
     newChatButton: document.getElementById('new-chat-button'),
 
     popup: document.getElementById('popup'),
+    popupClose: document.getElementById('popup-close'),
 
     modelSelect: document.getElementById('model-select'),
     currentModel: document.getElementById('current-model'),
@@ -217,6 +218,7 @@ class Conversation {
         this.generating = false;
         this.abortController = null;
         this.pendingContent = new PendingContent();
+        this.idCounter = 0;
     }
 
     getLastMessage() {
@@ -312,13 +314,20 @@ class Conversation {
     }
 
     createResponse() {
+        const errorMessages = dom.messagesDiv.querySelectorAll('.message-container.error');
+        if (errorMessages.length > 0) {
+            // remove all error messages
+            errorMessages.forEach((msg) => {
+                msg.remove();
+            });
+        }
+
         this.streamResponse()
             .catch((err) => {
                 if (err.name === 'AbortError') {
                     // request was aborted, do nothing
                     return;
                 }
-                // here too
                 console.error('Error during response streaming:', err);
                 this.generating = false;
                 dom.sendButton.innerText = 'send';
@@ -328,6 +337,12 @@ class Conversation {
                 window.scrollTo(0, document.body.scrollHeight);
                 dom.sendButton.innerText = 'send';
             });
+    }
+
+    displayError(message) {
+        const errorMessage = new Message(this, 'error');
+        errorMessage.addPart('text', message);
+        errorMessage.addToDOM();
     }
 
     async streamResponse() {
@@ -346,8 +361,8 @@ class Conversation {
         const apiKey = dom.apiKeyInput.value.trim();
 
         if (!apiKey) {
-            // change to better error later
-            console.error('API key is required.');
+            this.displayError('API key is required.');
+            this.removeMessage(BotMessage.id);
             this.generating = false;
             dom.sendButton.innerText = 'send';
             return;
@@ -374,18 +389,20 @@ class Conversation {
                 signal: this.abortController.signal,
             });
         } catch (error) {
-            // better error handling here too
             if (err.name === 'AbortError') {
                 return;
             }
-            console.error('Error fetching response:', error);
+            this.displayError('Failed to connect to the API. Please check your network connection.');
+            this.removeMessage(BotMessage.id);
             return;
         }
 
         if (!response.ok) {
-            // here too
-            const errorText = await response.text();
-            console.error('Error response from API:', errorText);
+            const errorResponse = await response.text();
+            const errorJSON = errorResponse ? JSON.parse(errorResponse) : {};
+            const errorText = errorJSON.error?.message || 'An unknown error occurred.';
+            this.displayError(`Error: ${response.status} - ${errorText}`);
+            this.removeMessage(BotMessage.id);
             this.generating = false;
             dom.sendButton.innerText = 'send';
             return;
@@ -428,7 +445,7 @@ class Conversation {
                         }
 
                         BotMessage.parts[0].content += content;
-                        BotMessage.parts[0].updateContent();
+                        BotMessage.parts[0].view.updateContent();
                     }
                 } catch (error) {
                     continue;
@@ -450,10 +467,8 @@ class Conversation {
 }
 
 class Message {
-    static _id = 0;
-
     constructor(conversation, role = 'user') {
-        this.id = Message._id++;
+        this.id = conversation.idCounter++;
         this.conversation = conversation;
         this.role = role;
 
@@ -463,7 +478,7 @@ class Message {
     addPart(type, content) {
         const part = new MessagePart(this, type, content);
         this.parts.push(part);
-        part.updateContent();
+        part.view.updateContent();
         return part;
     }
 
@@ -522,7 +537,7 @@ class Message {
     }
 
     regenerate() {
-        if (this.role !== 'assistant') return;
+        if (this.role !== 'assistant' && this.role !== 'error') return;
 
         this.conversation.removeMessagesAfter(this.id);
         this.conversation.removeMessage(this.id);
@@ -542,15 +557,7 @@ class MessagePart {
 
     setContent(content) {
         this.content = content;
-        this.updateContent();
-    }
-
-    updateContent() {
-        this.view.pending = false;
-        this.view.elements.messageDiv.classList.remove('pending');
-        if (this.view && this.view.elements.messageDiv) {
-            this.view.elements.messageDiv.innerHTML = DOMPurify.sanitize(md.render(this.content));
-        }
+        this.view.updateContent();
     }
 
     toAPIFormat() {
@@ -587,6 +594,24 @@ class PartView {
         button.addEventListener('click', onclick);
         this.elements.buttonContainer.appendChild(button);
         return button;
+    }
+
+    updateContent() {
+        this.pending = false;
+        this.elements.messageDiv.classList.remove('pending');
+        if (this.elements.messageDiv) {
+            this.elements.messageDiv.innerHTML = DOMPurify.sanitize(md.render(this.part.content));
+        }
+
+        if (window.hljs) {
+            // highlight code blocks
+            const codeBlocks = this.elements.messageDiv.querySelectorAll('pre code');
+            codeBlocks.forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+
+        this.addCopyButtons();
     }
 
     build() {
@@ -723,7 +748,7 @@ class PartView {
         this.editing = false;
         this.elements.messageDiv.contentEditable = 'false';
         this.elements.messageContainer.classList.remove('editing');
-        this.part.updateContent();
+        this.updateContent();
         this.elements.messageDiv.blur();
 
         this.updateButtonVisibility();
@@ -731,31 +756,74 @@ class PartView {
 
     updateButtonVisibility() {
         const b = this.buttons;
-        if (this.part.type === 'text') {
+        const vis = [];
+
+        vis.push(b.copyButton);
+        vis.push(b.deleteButton);
+
+        if (this.part.message.role === 'error') {
+            vis.push(b.regenerateButton);
+        } else if (this.part.type === 'text') {
             if (this.editing) {
-                b.saveButton.classList.remove('hidden');
-                b.cancelButton.classList.remove('hidden');
-                b.editButton.classList.add('hidden');
+                vis.push(b.saveButton);
+                vis.push(b.cancelButton);
 
                 if (this.part.message.role === 'user') {
-                    b.resendButton.classList.remove('hidden');
-                    b.regenerateButton.classList.add('hidden');
-                } else if (this.part.message.role === 'assistant') {
-                    b.resendButton.classList.add('hidden');
-                    b.regenerateButton.classList.remove('hidden');
+                    vis.push(b.resendButton);
                 }
             } else {
-                b.saveButton.classList.add('hidden');
-                b.cancelButton.classList.add('hidden');
-                b.editButton.classList.remove('hidden');
-                b.resendButton.classList.add('hidden');
-
-                if (this.part.message.role === 'user') {
-                    b.regenerateButton.classList.add('hidden');
-                } else if (this.part.message.role === 'assistant') {
-                    b.regenerateButton.classList.remove('hidden');
-                }
+                vis.push(b.editButton);
             }
+
+            if (this.part.message.role === 'assistant') {
+                vis.push(b.regenerateButton);
+            }
+        }
+
+        for (const button of Object.values(b)) {
+            if (vis.includes(button)) {
+                button.classList.remove('hidden');
+            } else {
+                button.classList.add('hidden');
+            }
+        }
+    }
+
+    addCopyButtons() {
+        for (const block of this.elements.messageDiv.querySelectorAll('pre:has(code)')) {
+            if (block.parentNode.classList.contains('code-wrapper')) {
+                continue; // already wrapped
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-wrapper';
+
+            block.parentNode.insertBefore(wrapper, block);
+            wrapper.appendChild(block);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'icon button copy-button corner-button';
+            copyButton.innerText = 'content_copy';
+            wrapper.appendChild(copyButton);
+
+            copyButton.addEventListener('click', () => {
+                const codeText = block.innerText || block.textContent;
+                navigator.clipboard
+                    .writeText(codeText)
+                    .then(() => {
+                        copyButton.innerText = 'check';
+                        setTimeout(() => {
+                            copyButton.innerText = 'content_copy';
+                        }, 2000);
+                    })
+                    .catch((err) => {
+                        console.error('Failed to copy code: ', err);
+                        copyButton.innerText = 'error';
+                        setTimeout(() => {
+                            copyButton.innerText = 'content_copy';
+                        }, 2000);
+                    });
+            });
         }
     }
 
@@ -862,9 +930,18 @@ Model.loadModels().then(() => {
     Model.setCurrentModel(Model.defaultModel);
 });
 
+if (!localStorage.getItem('notWarnedApiKey')) {
+    dom.popup.classList.remove('hidden');
+    localStorage.setItem('notWarnedApiKey', '1');
+}
+
 getSavedSettings();
 
 // buttons
+dom.popupClose.addEventListener('click', () => {
+    dom.popup.classList.add('hidden');
+});
+
 dom.apiKeyButton.addEventListener('click', () => {
     dom.apiKeyBlock.classList.toggle('collapsed');
 });
