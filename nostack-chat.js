@@ -317,18 +317,18 @@ class Conversation {
         const errorMessages = dom.messagesDiv.querySelectorAll('.message-container.error');
         if (errorMessages.length > 0) {
             // remove all error messages
-            errorMessages.forEach((msg) => {
-                msg.remove();
+            errorMessages.forEach((message) => {
+                message.remove();
             });
         }
 
         this.streamResponse()
-            .catch((err) => {
-                if (err.name === 'AbortError') {
+            .catch((error) => {
+                if (error.name === 'AbortError') {
                     // request was aborted, do nothing
                     return;
                 }
-                console.error('Error during response streaming:', err);
+                console.error('Error during response streaming:', error);
                 this.generating = false;
                 dom.sendButton.innerText = 'send';
             })
@@ -389,7 +389,7 @@ class Conversation {
                 signal: this.abortController.signal,
             });
         } catch (error) {
-            if (err.name === 'AbortError') {
+            if (error.name === 'AbortError') {
                 return;
             }
             this.displayError('Failed to connect to the API. Please check your network connection.');
@@ -686,9 +686,9 @@ class PartView {
                         this.buttons.copyButton.innerText = 'content_copy';
                     }, 1000);
                 })
-                .catch((err) => {
+                .catch((error) => {
                     // really unnecessary error handling
-                    console.error('Failed to copy text: ', err);
+                    console.error('Failed to copy text: ', error);
                     this.buttons.copyButton.innerText = 'error';
                     setTimeout(() => {
                         this.buttons.copyButton.innerText = 'content_copy';
@@ -816,8 +816,8 @@ class PartView {
                             copyButton.innerText = 'content_copy';
                         }, 2000);
                     })
-                    .catch((err) => {
-                        console.error('Failed to copy code: ', err);
+                    .catch((error) => {
+                        console.error('Failed to copy code: ', error);
                         copyButton.innerText = 'error';
                         setTimeout(() => {
                             copyButton.innerText = 'content_copy';
