@@ -310,6 +310,8 @@ class Conversation {
         // add user message to DOM
         userMessage.addToDOM();
 
+        Conversation.scrollDown();
+
         this.createResponse();
     }
 
@@ -334,7 +336,6 @@ class Conversation {
             })
             .then(() => {
                 this.generating = false;
-                window.scrollTo(0, document.body.scrollHeight);
                 dom.sendButton.innerText = 'send';
             });
     }
@@ -370,10 +371,13 @@ class Conversation {
 
         this.abortController = new AbortController();
 
+        const temperature = parseFloat(dom.temperatureInput.value);
+
         const requestBody = {
             model: model.id,
             messages: messages,
             stream: true,
+            temperature: temperature,
         };
 
         let response;
@@ -414,6 +418,13 @@ class Conversation {
         let done = false;
         let buffer = '';
 
+        const shouldAutoScroll = () => {
+            const scrollPosition = window.scrollY + window.innerHeight;
+            const scrollHeight = document.body.scrollHeight;
+            const scrollThreshold = 100; // px from bottom
+            return scrollHeight - scrollPosition <= scrollThreshold;
+        };
+
         while (!done) {
             let { value, done: streamDone } = await reader.read();
             if (streamDone) {
@@ -446,12 +457,27 @@ class Conversation {
 
                         BotMessage.parts[0].content += content;
                         BotMessage.parts[0].view.updateContent();
+
+                        // auto-scroll only if user is already near the bottom
+                        if (shouldAutoScroll()) {
+                            window.scrollTo({
+                                top: document.body.scrollHeight,
+                                behavior: 'smooth',
+                            });
+                        }
                     }
                 } catch (error) {
                     continue;
                 }
             }
         }
+    }
+
+    static scrollDown() {
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth',
+        });
     }
 
     static getSystemPrompt() {
@@ -901,6 +927,7 @@ function getSavedSettings() {
     const systemPrompt = localStorage.getItem('systemPrompt');
     const hue = localStorage.getItem('hue') || '230';
     const saturation = localStorage.getItem('saturation') || '5';
+    const temperature = localStorage.getItem('temperature') || '1.0';
 
     dom.fontSelect.value = font;
     dom.themeSelect.value = theme;
@@ -908,6 +935,9 @@ function getSavedSettings() {
     dom.hueValue.innerText = hue;
     dom.saturation.value = saturation;
     dom.saturationValue.innerText = saturation;
+
+    dom.temperatureInput.value = temperature;
+    dom.temperatureValue.innerText = temperature;
 
     document.documentElement.classList.remove('mono', 'slab', 'serif', 'sans-serif');
     document.documentElement.classList.add(font);
@@ -1027,6 +1057,12 @@ dom.themeSelect.addEventListener('change', (e) => {
 
 dom.systemPromptInput.addEventListener('blur', () => {
     localStorage.setItem('systemPrompt', dom.systemPromptInput.value.trim());
+});
+
+dom.temperatureInput.addEventListener('input', (e) => {
+    const temperature = e.target.value;
+    dom.temperatureValue.innerText = temperature;
+    localStorage.setItem('temperature', temperature);
 });
 
 dom.hue.addEventListener('input', (e) => {

@@ -289,12 +289,6 @@ table {
     --setting-width: 300px;
 }
 
-.settings-item:has(textarea) {
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-}
-
 #system-prompt {
     width: 100%;
     padding: 10px;
@@ -352,6 +346,12 @@ table {
 .settings-item .option-select {
     width: 100%;
     max-width: var(--setting-width);
+}
+
+.settings-item:has(textarea) {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
 }
 
 #model-select {
