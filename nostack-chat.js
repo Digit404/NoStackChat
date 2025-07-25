@@ -315,29 +315,23 @@ class Conversation {
         this.createResponse();
     }
 
-    createResponse() {
+    async createResponse() {
+        // remove error messages
         const errorMessages = dom.messagesDiv.querySelectorAll('.message-container.error');
-        if (errorMessages.length > 0) {
-            // remove all error messages
-            errorMessages.forEach((message) => {
-                message.remove();
-            });
-        }
+        errorMessages.forEach((message) => message.remove());
 
-        this.streamResponse()
-            .catch((error) => {
-                if (error.name === 'AbortError') {
-                    // request was aborted, do nothing
-                    return;
-                }
+        try {
+            this.generating = true;
+            dom.sendButton.innerText = 'stop';
+            await this.streamResponse();
+        } catch (error) {
+            if (error.name !== 'AbortError') {
                 console.error('Error during response streaming:', error);
-                this.generating = false;
-                dom.sendButton.innerText = 'send';
-            })
-            .then(() => {
-                this.generating = false;
-                dom.sendButton.innerText = 'send';
-            });
+            }
+        } finally {
+            this.generating = false;
+            dom.sendButton.innerText = 'send';
+        }
     }
 
     displayError(message) {
@@ -353,19 +347,13 @@ class Conversation {
         part.view.setPending(); // set pending state for the part
         BotMessage.addToDOM();
 
-        this.generating = true;
-        dom.sendButton.innerText = 'stop';
-
         const model = Model.getCurrentModel();
-
         const messages = this.toAPIFormat();
         const apiKey = dom.apiKeyInput.value.trim();
 
         if (!apiKey) {
             this.displayError('API key is required.');
             this.removeMessage(BotMessage.id);
-            this.generating = false;
-            dom.sendButton.innerText = 'send';
             return;
         }
 
@@ -407,15 +395,12 @@ class Conversation {
             const errorText = errorJSON.error?.message || 'An unknown error occurred.';
             this.displayError(`Error: ${response.status} - ${errorText}`);
             this.removeMessage(BotMessage.id);
-            this.generating = false;
-            dom.sendButton.innerText = 'send';
             return;
         }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
 
-        let done = false;
         let buffer = '';
 
         const shouldAutoScroll = () => {
@@ -425,12 +410,10 @@ class Conversation {
             return scrollHeight - scrollPosition <= scrollThreshold;
         };
 
-        while (!done) {
-            let { value, done: streamDone } = await reader.read();
-            if (streamDone) {
-                done = true;
-                break;
-            }
+        while (true) {
+            let { value, done } = await reader.read();
+
+            if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
@@ -439,16 +422,13 @@ class Conversation {
             for (let line of lines) {
                 line = line.trim();
                 if (!line) continue;
-                if (line === 'data: [DONE]') {
-                    done = true;
-                    break;
-                }
-
+                if (line === 'data: [DONE]') return;
                 if (!line.startsWith('data: ')) continue;
 
                 try {
                     const payload = JSON.parse(line.slice(6));
                     const content = payload.choices?.[0]?.delta?.content;
+                    
                     if (content) {
                         if (part.view.pending) {
                             part.view.pending = false;
