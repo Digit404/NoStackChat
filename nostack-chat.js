@@ -225,6 +225,13 @@ class Conversation {
         return this.messages.length > 0 ? this.messages[this.messages.length - 1] : null;
     }
 
+    redraw() {
+        dom.messagesDiv.innerHTML = '';
+        this.messages.forEach((message) => {
+            message.addToDOM();
+        });
+    }
+
     removeMessage(id) {
         const index = this.messages.findIndex((message) => message.id === id);
         if (index !== -1) {
@@ -234,6 +241,21 @@ class Conversation {
         } else {
             console.warn(`Message with id ${id} not found.`);
         }
+
+        const previousMessage = this.messages[index - 1];
+        const nextMessage = this.messages[index];
+
+        if (previousMessage && nextMessage && previousMessage.role === nextMessage.role) {
+            // if both share the same role, merge them
+            for (const part of nextMessage.parts) {
+                previousMessage.addPart(part.type, part.content);
+            }
+            
+            nextMessage.destroy();
+            this.messages.splice(index, 1);
+        }
+
+        this.redraw();
     }
 
     removeMessagesAfter(id) {
@@ -332,12 +354,6 @@ class Conversation {
             this.generating = false;
             dom.sendButton.innerText = 'send';
         }
-    }
-
-    displayError(message) {
-        const errorMessage = new Message(this, 'error');
-        errorMessage.addPart('text', message);
-        errorMessage.addToDOM();
     }
 
     async streamResponse() {
@@ -451,6 +467,12 @@ class Conversation {
                 }
             }
         }
+    }
+
+    displayError(message) {
+        const errorMessage = new Message(this, 'error');
+        errorMessage.addPart('text', message);
+        errorMessage.addToDOM();
     }
 
     static scrollDown() {
