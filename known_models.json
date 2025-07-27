@@ -96,5 +96,70 @@
             "vision",
             "nonstrict"
         ]
+    },
+    {
+        "id": "claude-3-5-haiku-20241022",
+        "provider": "Anthropic",
+        "name": "Claude Haiku 3.5",
+        "description": "Fastest model provided by Anthropic.",
+        "icon": "/res/Claude-3.5.png",
+        "color": "#c99878",
+        "type": "mini",
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
+    },
+    {
+        "id": "claude-3-5-sonnet-20241022",
+        "provider": "Anthropic",
+        "name": "Claude Sonnet 3.5",
+        "description": "Cheaper model provided by Anthropic.",
+        "icon": "/res/Claude-3.5.png",
+        "color": "#c99878",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
+    },
+    {
+        "id": "claude-3-7-sonnet-20250219",
+        "provider": "Anthropic",
+        "name": "Claude Sonnet 3.7",
+        "description": "Standard model from Anthropic, optimized for speed and cost.",
+        "icon": "/res/Claude-3.7.png",
+        "color": "#000",
+        "type": "reasoning",
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
+    },
+    {
+        "id": "claude-sonnet-4-20250514",
+        "provider": "Anthropic",
+        "name": "Claude Sonnet 4",
+        "description": "Standard reasoning model from Anthropic.",
+        "icon": "/res/Claude-4.png",
+        "color": "#FFF",
+        "type": "reasoning",
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
+    },
+    {
+        "id": "claude-opus-4-20250514",
+        "provider": "Anthropic",
+        "name": "Claude Opus 4",
+        "description": "Most powerful reasoning model from Anthropic.",
+        "icon": "/res/Claude-4.png",
+        "color": "#FFF",
+        "type": "reasoning",
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
     }
 ]

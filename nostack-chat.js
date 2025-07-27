@@ -8,10 +8,12 @@ const dom = {
     sendButton: document.getElementById('send'),
     addButton: document.getElementById('add'),
 
-    apiKeyBlock: document.getElementById('key-block'),
-    apiKeyInput: document.getElementById('api-key'),
-    apiKeyButton: document.getElementById('key-button'),
-    verifyButton: document.getElementById('verify-button'),
+    keyButtons: document.querySelectorAll('.key-button'),
+
+    openaiApiKeyInput: document.getElementById('openai-api-key'),
+    anthropicApiKeyInput: document.getElementById('anthropic-api-key'),
+    verifyOpenaiButton: document.getElementById('verify-openai-button'),
+    verifyAnthropicButton: document.getElementById('verify-anthropic-button'),
 
     newChatButton: document.getElementById('new-chat-button'),
 
@@ -41,14 +43,12 @@ const dom = {
     saturationValue: document.getElementById('saturation-value'),
 };
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-const md = window.markdownit();
-md.set({ breaks: true });
-
 class Model {
     static models = [];
     static currentModel = null;
     static defaultModel = 'gpt-4o';
+    static OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+    static ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
     constructor(data) {
         this.id = data.id;
@@ -59,6 +59,12 @@ class Model {
         this.color = data.color;
         this.type = data.type || 'standard';
         this.capabilities = data.capabilities || [];
+
+        if (this.provider === 'OpenAI') {
+            this.url = Model.OPENAI_API_URL;
+        } else if (this.provider === 'Anthropic') {
+            this.url = Model.ANTHROPIC_API_URL;
+        }
     }
 
     createPopupItem() {
@@ -128,6 +134,145 @@ class Model {
         );
 
         document.body.appendChild(infoPopup);
+    }
+
+    getAPIKey() {
+        if (this.provider === 'OpenAI') {
+            return dom.openaiApiKeyInput.value.trim();
+        } else if (this.provider === 'Anthropic') {
+            return dom.anthropicApiKeyInput.value.trim();
+        }
+        return '';
+    }
+
+    async getStreamResponse(messages, temperature, abortSignal) {
+        if (this.provider === 'OpenAI') {
+            const apiKey = this.getAPIKey();
+
+            if (!apiKey) {
+                throw new Error('API key is required.');
+            }
+
+            const requestBody = {
+                model: this.id,
+                messages,
+                stream: true,
+                temperature,
+            };
+
+            const response = await fetch(this.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify(requestBody),
+                signal: abortSignal,
+            });
+
+            if (!response.ok) {
+                let errorText = await response.text();
+                let errorMsg = 'Unknown error';
+                try {
+                    errorMsg = JSON.parse(errorText).error?.message || errorText;
+                } catch {
+                    // fallback to raw text if parsing fails
+                }
+                throw new Error(`${response.status}: ${errorMsg}`);
+            }
+
+            return response.body.getReader();
+        } else if (this.provider === 'Anthropic') {
+            const apiKey = this.getAPIKey();
+
+            if (!apiKey) {
+                throw new Error('API key is required.');
+            }
+
+            // convert messages format for Anthropic
+            const anthropicMessages = messages.filter((msg) => msg.role !== 'system');
+            const systemMessage = messages.find((msg) => msg.role === 'system');
+
+            const requestBody = {
+                model: this.id,
+                messages: anthropicMessages.map((msg) => ({
+                    role: msg.role,
+                    content: msg.content,
+                })),
+                stream: true,
+                temperature,
+                max_tokens: 4096,
+            };
+
+            // add system message if it exists
+            if (systemMessage) {
+                requestBody.system = systemMessage.content;
+            }
+
+            const response = await fetch(this.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true', // only way to get access from browser
+                },
+                body: JSON.stringify(requestBody),
+                signal: abortSignal,
+            });
+
+            if (!response.ok) {
+                let errorText = await response.text();
+                let errorMsg = 'Unknown error';
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMsg = errorData.error?.message || errorData.message || errorText;
+                } catch {
+                    // fallback to raw text if parsing fails
+                }
+                throw new Error(`${response.status}: ${errorMsg}`);
+            }
+
+            return response.body.getReader();
+        }
+    }
+
+    parseStreamChunk(line) {
+        if (!line || !line.trim()) return null;
+
+        if (this.provider === 'OpenAI') {
+            if (line === 'data: [DONE]') return { done: true };
+            if (!line.startsWith('data: ')) return null;
+
+            try {
+                const payload = JSON.parse(line.slice(6));
+                const content = payload.choices?.[0]?.delta?.content;
+                return content ? { content } : null;
+            } catch {
+                return null;
+            }
+        } else if (this.provider === 'Anthropic') {
+            if (line.startsWith('event: ')) {
+                const event = line.slice(7);
+                if (event === 'message_stop') return { done: true };
+                return null;
+            }
+
+            if (!line.startsWith('data: ')) return null;
+
+            try {
+                const payload = JSON.parse(line.slice(6));
+
+                if (payload.type === 'content_block_delta' && payload.delta?.type === 'text_delta') {
+                    return { content: payload.delta.text };
+                }
+                return null;
+            } catch {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     static async loadModels() {
@@ -250,12 +395,11 @@ class Conversation {
             for (const part of nextMessage.parts) {
                 previousMessage.addPart(part.type, part.content);
             }
-            
+
             nextMessage.destroy();
             this.messages.splice(index, 1);
+            this.redraw();
         }
-
-        this.redraw();
     }
 
     removeMessagesAfter(id) {
@@ -286,6 +430,12 @@ class Conversation {
             this.abortController = null;
         }
         this.generating = false;
+    }
+
+    displayError(message) {
+        const errorMessage = new Message(this, 'error');
+        errorMessage.addPart('text', message);
+        errorMessage.addToDOM();
     }
 
     send() {
@@ -357,64 +507,29 @@ class Conversation {
     }
 
     async streamResponse() {
+        const messages = this.toAPIFormat();
+        const model = Model.getCurrentModel();
+
         const BotMessage = new Message(this, 'assistant');
         this.messages.push(BotMessage);
         const part = BotMessage.addPart('text', ''); // start with empty text part
         part.view.setPending(); // set pending state for the part
         BotMessage.addToDOM();
 
-        const model = Model.getCurrentModel();
-        const messages = this.toAPIFormat();
-        const apiKey = dom.apiKeyInput.value.trim();
-
-        if (!apiKey) {
-            this.displayError('API key is required.');
-            this.removeMessage(BotMessage.id);
-            return;
-        }
-
         this.abortController = new AbortController();
 
         const temperature = parseFloat(dom.temperatureInput.value);
 
-        const requestBody = {
-            model: model.id,
-            messages: messages,
-            stream: true,
-            temperature: temperature,
-        };
-
-        let response;
+        let reader;
 
         try {
-            response = await fetch(OPENAI_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`,
-                },
-                body: JSON.stringify(requestBody),
-                signal: this.abortController.signal,
-            });
+            reader = await model.getStreamResponse(messages, temperature, this.abortController.signal);
         } catch (error) {
-            if (error.name === 'AbortError') {
-                return;
-            }
-            this.displayError('Failed to connect to the API. Please check your network connection.');
+            this.displayError(`Error: ${error.message}`);
             this.removeMessage(BotMessage.id);
             return;
         }
 
-        if (!response.ok) {
-            const errorResponse = await response.text();
-            const errorJSON = errorResponse ? JSON.parse(errorResponse) : {};
-            const errorText = errorJSON.error?.message || 'An unknown error occurred.';
-            this.displayError(`Error: ${response.status} - ${errorText}`);
-            this.removeMessage(BotMessage.id);
-            return;
-        }
-
-        const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
 
         let buffer = '';
@@ -436,43 +551,30 @@ class Conversation {
             buffer = lines.pop();
 
             for (let line of lines) {
-                line = line.trim();
-                if (!line) continue;
-                if (line === 'data: [DONE]') return;
-                if (!line.startsWith('data: ')) continue;
+                const parsed = model.parseStreamChunk(line.trim());
 
-                try {
-                    const payload = JSON.parse(line.slice(6));
-                    const content = payload.choices?.[0]?.delta?.content;
-                    
-                    if (content) {
-                        if (part.view.pending) {
-                            part.view.pending = false;
-                            part.setContent('');
-                        }
+                if (!parsed) continue;
+                if (parsed.done) return;
 
-                        BotMessage.parts[0].content += content;
-                        BotMessage.parts[0].view.updateContent();
-
-                        // auto-scroll only if user is already near the bottom
-                        if (shouldAutoScroll()) {
-                            window.scrollTo({
-                                top: document.body.scrollHeight,
-                                behavior: 'smooth',
-                            });
-                        }
+                if (parsed.content) {
+                    if (part.view.pending) {
+                        part.view.pending = false;
+                        part.setContent('');
                     }
-                } catch (error) {
-                    continue;
+
+                    BotMessage.parts[0].content += parsed.content;
+                    BotMessage.parts[0].view.updateContent();
+
+                    // auto-scroll only if user is already near the bottom
+                    if (shouldAutoScroll()) {
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth',
+                        });
+                    }
                 }
             }
         }
-    }
-
-    displayError(message) {
-        const errorMessage = new Message(this, 'error');
-        errorMessage.addPart('text', message);
-        errorMessage.addToDOM();
     }
 
     static scrollDown() {
@@ -730,7 +832,7 @@ class PartView {
 
         this.editing = true;
         this.elements.messageContainer.classList.add('editing');
-        this.elements.messageDiv.innerText = this.part.content;
+        this.elements.messageDiv.innerHTML = this.part.content;
         this.elements.messageDiv.contentEditable = 'true';
         this.elements.messageDiv.focus();
 
@@ -957,6 +1059,9 @@ function getSavedSettings() {
 
 let conversation = new Conversation();
 
+const md = window.markdownit();
+md.set({ breaks: true });
+
 Model.loadModels().then(() => {
     Model.buildPopup(dom.modelSelect);
     Model.setCurrentModel(Model.defaultModel);
@@ -972,10 +1077,6 @@ getSavedSettings();
 // buttons
 dom.popupClose.addEventListener('click', () => {
     dom.popup.classList.add('hidden');
-});
-
-dom.apiKeyButton.addEventListener('click', () => {
-    dom.apiKeyBlock.classList.toggle('collapsed');
 });
 
 dom.newChatButton.addEventListener('click', (e) => {
@@ -1034,6 +1135,15 @@ dom.promptInput.addEventListener('keydown', (e) => {
 // settings
 dom.settingsButton.addEventListener('click', () => {
     dom.settingsPopup.classList.toggle('hidden');
+});
+
+dom.keyButtons.forEach((button) => {
+    button.addEventListener('click', (e) => {
+        const keyContainer = e.target.closest('.api-key-container');
+        if (keyContainer) {
+            keyContainer.classList.toggle('collapsed');
+        }
+    });
 });
 
 dom.fontSelect.addEventListener('change', (e) => {

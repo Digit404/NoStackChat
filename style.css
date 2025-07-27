@@ -43,7 +43,7 @@ code {
     font-family: var(--font-mono);
     padding: 2.5px 5px;
     border-radius: var(--border-radius);
-    font-size: .9rem;
+    font-size: 1.1rem;
 }
 
 pre code,
@@ -165,6 +165,28 @@ table {
     justify-content: flex-start;
 }
 
+#main.screenshot {
+    #settings-button {
+        display: none;
+    }
+
+    #new-chat-button {
+        display: none;
+    }
+
+    #model-select {
+        display: none;
+    }
+
+    .controls-container {
+        display: none;
+    }
+
+    #messages-viewport {
+        padding: 20px;
+    }
+}
+
 .controls-container {
     display: flex;
     flex-direction: column;
@@ -261,6 +283,9 @@ table {
 }
 
 #settings-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
     background-color: var(--fg-color);
     color: var(--text-color);
     height: 3rem;
@@ -279,6 +304,7 @@ table {
     width: 800px;
     max-width: 95%;
     gap: 5px;
+    overflow-y: auto;
 }
 
 .settings-section {
@@ -674,38 +700,34 @@ table {
     height: 35px;
 }
 
-#key-block {
-    position: fixed;
-    top: 20px;
-    right: 20px;
+.api-key-container {
     display: flex;
     align-items: center;
-    background-color: var(--fg-color);
+    background-color: var(--bg-color);
     border-radius: var(--border-radius);
-    outline: var(--contrast-outline);
     z-index: 11;
 
-    &:has(#api-key:focus) {
+    &:has(.api-key-input:focus) {
         box-shadow: var(--focus-outline);
     }
 
     &.collapsed {
 
-        #api-key,
-        #verify-button {
+        .api-key-input,
+        .verify-button {
             width: 0;
             padding: 0;
             opacity: 0;
             pointer-events: none;
         }
 
-        #key-button {
+        .key-button {
             border-radius: var(--border-radius);
         }
     }
 }
 
-#key-button {
+.key-button {
     color: var(--text-color);
     background-color: transparent;
     height: 3rem;
@@ -737,7 +759,7 @@ table {
     user-select: none;
 }
 
-#api-key {
+.api-key-input {
     width: 300px;
     height: 3rem;
     background-color: transparent;
@@ -747,11 +769,11 @@ table {
     transition: width 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
 }
 
-#api-key:focus {
-    box-shadow: none;
+.api-key-input:focus {
+    box-shadow: none !important;
 }
 
-#verify-button {
+.verify-button {
     background-color: transparent;
     color: var(--text-color);
     height: 3rem;
@@ -804,9 +826,9 @@ table {
         color: var(--bg-color);
     }
 
-    #key-button:hover,
+    .key-button:hover,
     #new-chat-button:hover,
-    #verify-button:hover,
+    .verify-button:hover,
     #settings-button:hover {
         background-color: var(--fg-color-hover);
     }

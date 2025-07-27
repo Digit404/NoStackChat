@@ -21,14 +21,9 @@
     <div id=main>
         <div id="title-block">
             <h1 class="title">NoStack</h1>
-            <p class="description">A serverless frontend for the OpenAI chat models.</p>
+            <p class="description">A serverless frontend for AI chat models.</p>
         </div>
-        <div id=key-block class="collapsed">
-            <button class="icon" id="settings-button">settings</button>
-            <button class="icon" id="key-button">key</button>
-            <input type="password" id="api-key" placeholder="Enter OpenAI API key" autocomplete="off">
-            <button id="verify-button" class="icon">check</button>
-        </div>
+        <button class="icon" id="settings-button">settings</button>
         <a id="new-chat-button" class="icon" href="./">add_comment</a>
         <button id="model-select">
             <img class="model-icon mini" src="./res/GPT_standard.png"></img>
@@ -57,14 +52,14 @@
             <span id="popup-icon" class="popup-header icon">warning</span>
             <div id="popup-text">
                 <strong>Heads up:</strong> As a general rule, you shouldn't paste your API key into a website you don't
-                fully trust. This site is <em>fully static</em>—no servers, and only talks to OpenAI.<br>
+                fully trust. This site is <em>fully static</em>—no servers, and only talks to AI providers.<br>
                 <a href="https://github.com/Digit404/NoStackChat" target="_blank" rel="noopener noreferrer"> Source code
                     on GitHub, audit it yourself. </a>
                 <hr>
                 <ul>
-                    <li>This site does <b>not</b> log, store, or access your API key or prompts. Everything stays on
+                    <li>This site does <b>not</b> log, store, or access your API keys or prompts. Everything stays on
                         your browser.</li>
-                    <li>Only official OpenAI servers ever see your key.</li>
+                    <li>Only official AI provider servers ever see your keys.</li>
                     <li>For maximum safety, use a <b>restricted or temporary API key</b>.</li>
                     <li>Be careful with browser extensions—some can read anything on any website.</li>
                     <li>You can open DevTools and audit the whole source. No secrets here.</li>
@@ -76,6 +71,27 @@
     <div id="settings-popup" class="popup-background hidden">
         <div id="settings-content" class="popup-content">
             <h1>Settings</h1>
+            <div class="settings-section">
+                <h2>API Keys</h2>
+                <div class="settings-item">
+                    <label for="openai-api-key">OpenAI API Key</label>
+                    <div class="api-key-container collapsed">
+                        <button class="icon key-button" id="openai-key-button">key</button>
+                        <input type="password" id="openai-api-key" placeholder="Enter OpenAI API key" autocomplete="off"
+                            class="api-key-input">
+                        <button id="verify-openai-button" class="icon verify-button">check</button>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="anthropic-api-key">Anthropic API Key</label>
+                    <div class="api-key-container collapsed">
+                        <button class="icon key-button" id="anthropic-key-button">key</button>
+                        <input type="password" id="anthropic-api-key" placeholder="Enter Anthropic API key"
+                            autocomplete="off" class="api-key-input">
+                        <button id="verify-anthropic-button" class="icon verify-button">check</button>
+                    </div>
+                </div>
+            </div>
             <div class="settings-section">
                 <h2>Generation</h2>
                 <div class="settings-item">
@@ -89,7 +105,6 @@
                         <input type="range" id="temperature" min="0" max="2" step="0.1" value="1" class="small-slider">
                         <span id="temperature-value">1.0</span>
                     </div>
-                    
                 </div>
             </div>
             <div class="settings-section">
