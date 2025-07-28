@@ -12,8 +12,8 @@ const dom = {
 
     openaiApiKeyInput: document.getElementById('openai-api-key'),
     anthropicApiKeyInput: document.getElementById('anthropic-api-key'),
-    verifyOpenaiButton: document.getElementById('verify-openai-button'),
-    verifyAnthropicButton: document.getElementById('verify-anthropic-button'),
+    // verifyOpenaiButton: document.getElementById('verify-openai-button'),
+    // verifyAnthropicButton: document.getElementById('verify-anthropic-button'),
 
     newChatButton: document.getElementById('new-chat-button'),
 
@@ -931,10 +931,29 @@ class PartView {
             block.parentNode.insertBefore(wrapper, block);
             wrapper.appendChild(block);
 
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'code-buttons';
+            wrapper.appendChild(buttonContainer);
+
+            const collapseButton = document.createElement('button');
+            collapseButton.className = 'icon button collapse-button';
+            collapseButton.innerText = 'expand_less';
+            buttonContainer.appendChild(collapseButton);
+
+            collapseButton.addEventListener('click', () => {
+                if (wrapper.classList.contains('collapsed')) {
+                    wrapper.classList.remove('collapsed');
+                    collapseButton.innerText = 'expand_less';
+                } else {
+                    wrapper.classList.add('collapsed');
+                    collapseButton.innerText = 'expand_more';
+                }
+            });
+
             const copyButton = document.createElement('button');
-            copyButton.className = 'icon button copy-button corner-button';
+            copyButton.className = 'icon button copy-button';
             copyButton.innerText = 'content_copy';
-            wrapper.appendChild(copyButton);
+            buttonContainer.appendChild(copyButton);
 
             copyButton.addEventListener('click', () => {
                 const codeText = block.innerText || block.textContent;
