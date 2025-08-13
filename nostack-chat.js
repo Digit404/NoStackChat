@@ -46,7 +46,7 @@ const dom = {
 class Model {
     static models = [];
     static currentModel = null;
-    static defaultModel = 'gpt-4o';
+    static defaultModel = 'gpt-4.1';
     static OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
     static ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -59,6 +59,7 @@ class Model {
         this.color = data.color;
         this.type = data.type || 'standard';
         this.capabilities = data.capabilities || [];
+        this.flags = data.flags || [];
 
         if (this.provider === 'OpenAI') {
             this.url = Model.OPENAI_API_URL;
@@ -157,8 +158,11 @@ class Model {
                 model: this.id,
                 messages,
                 stream: true,
-                temperature,
             };
+
+            if (temperature && !this.flags.includes('temperature_unsupported')) {
+                requestBody.temperature = temperature;
+            }
 
             const response = await fetch(this.url, {
                 method: 'POST',
@@ -200,9 +204,12 @@ class Model {
                     content: msg.content,
                 })),
                 stream: true,
-                temperature,
-                max_tokens: 4096,
+                max_tokens: 8192,
             };
+
+            if (temperature && !this.flags.includes('temperature_unsupported')) {
+                requestBody.temperature = temperature / 2; // Anthropic uses a different scale
+            }
 
             // add system message if it exists
             if (systemMessage) {
@@ -296,25 +303,25 @@ class Model {
     }
 
     static buildPopup() {
-        const types = Model.models.reduce((acc, model) => {
-            if (!acc.includes(model.type)) {
-                acc.push(model.type);
+        const providers = Model.models.reduce((acc, model) => {
+            if (!acc.includes(model.provider)) {
+                acc.push(model.provider);
             }
             return acc;
         }, []);
 
         dom.modelPopup.innerHTML = ''; // clear existing content
 
-        types.forEach((type) => {
+        providers.forEach((provider) => {
             const typeSection = document.createElement('div');
             typeSection.className = 'model-list-section';
-            typeSection.innerHTML = `<h2>${type.charAt(0).toUpperCase() + type.slice(1)}</h2>`;
+            typeSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
             const typeList = document.createElement('div');
             typeList.className = 'model-list';
             typeSection.appendChild(typeList);
             dom.modelPopup.appendChild(typeSection);
             Model.models
-                .filter((model) => model.type === type)
+                .filter((model) => model.provider === provider)
                 .forEach((model) => {
                     typeList.appendChild(model.createPopupItem());
                 });

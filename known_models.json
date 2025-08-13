@@ -1,44 +1,15 @@
 [
     {
-        "id": "gpt-4o",
-        "provider": "OpenAI",
-        "name": "GPT-4o",
-        "description": "Fast, intelligent, flexible GPT model.",
-        "icon": "/res/GPT_standard.png",
-        "color": "#000",
-        "type": "standard",
-        "capabilities": [
-            "streaming",
-            "vision",
-            "nonstrict"
-        ]
-    },
-    {
         "id": "gpt-4.1",
         "provider": "OpenAI",
         "name": "GPT-4.1",
         "description": "Flagship GPT model for complex tasks.",
-        "icon": "/res/GPT_plus.png",
+        "icon": "/res/GPT_standard.png",
         "color": "#FFF",
         "type": "standard",
         "capabilities": [
             "streaming",
-            "vision",
-            "nonstrict"
-        ]
-    },
-    {
-        "id": "gpt-4o-search-preview",
-        "provider": "OpenAI",
-        "name": "SearchGPT",
-        "description": "GPT-4o with search capabilities.",
-        "icon": "/res/GPT_search.png",
-        "color": "#1A7ACF",
-        "type": "standard",
-        "capabilities": [
-            "streaming",
-            "nonstrict",
-            "search"
+            "vision"
         ]
     },
     {
@@ -51,8 +22,7 @@
         "type": "mini",
         "capabilities": [
             "streaming",
-            "vision",
-            "nonstrict"
+            "vision"
         ]
     },
     {
@@ -65,36 +35,65 @@
         "type": "mini",
         "capabilities": [
             "streaming",
-            "vision",
-            "nonstrict"
+            "vision"
         ]
     },
     {
-        "id": "o3",
+        "id": "gpt-5",
         "provider": "OpenAI",
-        "name": "o3",
-        "description": "OpenAI's most powerful reasoning model.",
-        "icon": "/res/o3.png",
-        "color": "#000",
-        "type": "reasoning",
-        "capabilities": [
-            "streaming",
-            "vision",
-            "nonstrict"
-        ]
-    },
-    {
-        "id": "o4-mini",
-        "provider": "OpenAI",
-        "name": "o4 Mini",
-        "description": "Faster, more affordable reasoning model.",
-        "icon": "/res/o4-mini.png",
+        "name": "GPT-5",
+        "description": "Next-generation reasoning model from OpenAI.",
+        "icon": "/res/GPT_plus.png",
         "color": "#FFF",
-        "type": "reasoning",
+        "type": "standard",
         "capabilities": [
             "streaming",
             "vision",
-            "nonstrict"
+            "reasoning"
+        ]
+    },
+    {
+        "id": "gpt-5-mini",
+        "provider": "OpenAI",
+        "name": "GPT-5 Mini",
+        "description": "Faster, more affordable reasoning model.",
+        "icon": "/res/GPT_mini.png",
+        "color": "#10A37F",
+        "type": "mini",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ]
+    },
+    {
+        "id": "gpt-5-nano",
+        "provider": "OpenAI",
+        "name": "GPT-5 Nano",
+        "description": "Fastest, most cost-effective version of GPT-5.",
+        "icon": "/res/GPT_nano.png",
+        "color": "#BF3840",
+        "type": "mini",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ]
+    },
+    {
+        "id": "gpt-4o-search-preview",
+        "provider": "OpenAI",
+        "name": "SearchGPT",
+        "description": "GPT-4o with search capabilities.",
+        "icon": "/res/GPT_search.png",
+        "color": "#1A7ACF",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "search"
+        ],
+        "flags": [
+            "temperature_unsupported"
         ]
     },
     {
@@ -108,6 +107,10 @@
         "capabilities": [
             "streaming",
             "vision"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
         ]
     },
     {
@@ -121,6 +124,10 @@
         "capabilities": [
             "streaming",
             "vision"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
         ]
     },
     {
@@ -130,10 +137,15 @@
         "description": "Standard model from Anthropic, optimized for speed and cost.",
         "icon": "/res/Claude-3.7.png",
         "color": "#000",
-        "type": "reasoning",
+        "type": "standard",
         "capabilities": [
             "streaming",
-            "vision"
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
         ]
     },
     {
@@ -143,23 +155,51 @@
         "description": "Standard reasoning model from Anthropic.",
         "icon": "/res/Claude-4.png",
         "color": "#FFF",
-        "type": "reasoning",
+        "type": "standard",
         "capabilities": [
             "streaming",
-            "vision"
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
         ]
     },
     {
         "id": "claude-opus-4-20250514",
         "provider": "Anthropic",
         "name": "Claude Opus 4",
-        "description": "Most powerful reasoning model from Anthropic.",
+        "description": "High performance reasoning model from Anthropic.",
         "icon": "/res/Claude-4.png",
         "color": "#FFF",
-        "type": "reasoning",
+        "type": "standard",
         "capabilities": [
             "streaming",
-            "vision"
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
+        ]
+    },
+    {
+        "id": "claude-opus-4-1-20250805",
+        "provider": "Anthropic",
+        "name": "Claude Opus 4.1",
+        "description": "Anthropics most powerful reasoning model.",
+        "icon": "/res/Claude-4.png",
+        "color": "#FFF",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
         ]
     }
 ]
