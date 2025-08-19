@@ -764,6 +764,12 @@ class Message {
         this.conversation = conversation;
         this.role = role;
 
+        if (this.role === "assistant") {
+            this.model = Model.getCurrentModel();
+        }
+
+        this.timestamp = new Date().toISOString();
+
         this.parts = [];
     }
 
@@ -911,6 +917,15 @@ class PartView {
         const el = this.elements;
         el.messageContainer = document.createElement("div");
         el.messageContainer.classList.add(this.part.message.role);
+
+        el.timestamp = document.createElement("span");
+        el.timestamp.classList.add("timestamp");
+        el.timestamp.innerText = new Date(this.part.message.timestamp).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+        el.timestamp.title = new Date(this.part.message.timestamp).toLocaleString();
+        el.messageContainer.appendChild(el.timestamp);
 
         // create message part
         if (this.part.type === "text") {
@@ -1326,6 +1341,7 @@ dom.promptInput.addEventListener("keydown", (e) => {
 // settings
 dom.settingsButton.addEventListener("click", () => {
     dom.settingsPopup.classList.toggle("hidden");
+    dom.modelSettingsPopup.classList.add("hidden");
 });
 
 dom.settingsPopup.addEventListener("click", (e) => {
@@ -1364,6 +1380,13 @@ dom.saveKeyCheckbox.addEventListener("change", (e) => {
     if (!e.target.checked) {
         localStorage.removeItem("openaiApiKey");
         localStorage.removeItem("anthropicApiKey");
+    } else {
+        if (dom.openaiApiKeyInput.value.trim()) {
+            localStorage.setItem("openaiApiKey", dom.openaiApiKeyInput.value.trim());
+        }
+        if (dom.anthropicApiKeyInput.value.trim()) {
+            localStorage.setItem("anthropicApiKey", dom.anthropicApiKeyInput.value.trim());
+        }
     }
 });
 

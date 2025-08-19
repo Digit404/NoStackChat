@@ -513,7 +513,7 @@ table {
         font-size: 1rem;
         font-weight: bold;
         opacity: 0.5;
-        margin-left: 25px;
+        margin-left: 10px;
     }
 
     .model-list {
@@ -542,13 +542,14 @@ table {
             }
 
             .model-hide-icon,
-            .model-info-icon {
+            .model-info-icon,
+            .model-star-button {
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 width: 40px;
                 height: 40px;
-                font-size: 1.5rem;
+                font-size: 1.75rem;
                 border-radius: 1337px;
                 opacity: 0.5;
                 margin-left: auto;
@@ -564,29 +565,13 @@ table {
             }
 
             .model-star-button {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 30px;
-                height: 30px;
-                font-size: 1.5rem;
-                border-radius: 1337px;
-                opacity: 0.5;
-                user-select: none;
-                cursor: pointer;
-                transition: opacity 0.2s ease;
+                margin-left: -10px;
 
                 font-variation-settings: "FILL" 0;
 
                 &.default {
                     font-variation-settings: "FILL" 1;
                     opacity: 1;
-                }
-
-                @media (hover: hover) {
-                    &:hover {
-                        opacity: 1;
-                    }
                 }
             }
 
@@ -664,6 +649,24 @@ table {
 
     &.user {
         align-items: flex-end;
+    }
+
+    .timestamp {
+        font-size: 0.8rem;
+        color: var(--text-color);
+        margin-top: -1.25rem;
+        margin-bottom: 5px;
+        margin-left: 10px;
+        margin-right: 10px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        user-select: none;
+
+        @media (hover: hover) {
+            .message-container:hover & {
+                opacity: 0.5;
+            }
+        }
     }
 
     .message {
