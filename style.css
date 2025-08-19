@@ -148,10 +148,6 @@ table {
 
 /* specific styles */
 
-#dark-mode-button {
-    display: none;
-}
-
 #main {
     background-color: var(--bg-color);
     height: 100%;
