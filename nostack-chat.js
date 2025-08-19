@@ -1011,7 +1011,7 @@ class PartView {
 
         this.editing = true;
         this.elements.messageContainer.classList.add("editing");
-        this.elements.messageDiv.innerHTML = this.part.content;
+        this.elements.messageDiv.textContent = this.part.content;
         this.elements.messageDiv.contentEditable = "true";
         this.elements.messageDiv.focus();
 
@@ -1267,7 +1267,10 @@ function getSavedSettings() {
 let conversation = new Conversation();
 
 const md = window.markdownit();
-md.set({ breaks: true });
+md.set({
+    breaks: true,
+    html: true,
+});
 
 Model.loadModels().then(() => {
     Model.buildPopup();

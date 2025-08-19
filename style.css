@@ -651,24 +651,6 @@ table {
         align-items: flex-end;
     }
 
-    .timestamp {
-        font-size: 0.8rem;
-        color: var(--text-color);
-        margin-top: -1.25rem;
-        margin-bottom: 5px;
-        margin-left: 10px;
-        margin-right: 10px;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        user-select: none;
-
-        @media (hover: hover) {
-            .message-container:hover & {
-                opacity: 0.5;
-            }
-        }
-    }
-
     .message {
         display: flex;
         flex-direction: column;
@@ -777,6 +759,26 @@ table {
         &:hover {
             color: var(--text-color);
             opacity: 1;
+        }
+    }
+}
+
+.timestamp {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    margin-top: -1.25rem;
+    margin-bottom: 5px;
+    margin-left: 10px;
+    margin-right: 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    user-select: none;
+    pointer-events: none;
+
+    @media (hover: hover) {
+        .message-container:hover &,
+        .message-images:hover & {
+            opacity: 0.5;
         }
     }
 }
