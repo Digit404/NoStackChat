@@ -8,13 +8,6 @@ const dom = {
     sendButton: document.getElementById("send"),
     addButton: document.getElementById("add"),
 
-    keyButtons: document.querySelectorAll(".key-button"),
-
-    openaiApiKeyInput: document.getElementById("openai-api-key"),
-    anthropicApiKeyInput: document.getElementById("anthropic-api-key"),
-    // verifyOpenaiButton: document.getElementById('verify-openai-button'),
-    // verifyAnthropicButton: document.getElementById('verify-anthropic-button'),
-
     newChatButton: document.getElementById("new-chat-button"),
 
     popup: document.getElementById("popup"),
@@ -31,6 +24,13 @@ const dom = {
 
     settingsPopup: document.getElementById("settings-popup"),
     settingsButton: document.getElementById("settings-button"),
+
+    keyButtons: document.querySelectorAll(".key-button"),
+
+    openaiApiKeyInput: document.getElementById("openai-api-key"),
+    anthropicApiKeyInput: document.getElementById("anthropic-api-key"),
+
+    saveKeyCheckbox: document.getElementById("saveKey"),
 
     systemPromptInput: document.getElementById("system-prompt"),
 
@@ -65,6 +65,8 @@ class Model {
         this.capabilities = data.capabilities || [];
         this.flags = data.flags || [];
         this._hidden = false;
+
+        this.isDefaultModel = Model.defaultModel === this.id;
 
         this.popupItem = null;
         this.settingsItem = null;
@@ -141,6 +143,14 @@ class Model {
         this.settingsItem.className = "model-item";
         this.settingsItem.title = this.description;
 
+        this.starButton = document.createElement("span");
+        this.starButton.className = "icon model-star-button";
+        this.starButton.innerText = "star";
+
+        if (this.isDefaultModel) {
+            this.starButton.classList.add("default");
+        }
+
         const icon = document.createElement("img");
         icon.src = this.icon;
         icon.alt = this.name;
@@ -154,12 +164,19 @@ class Model {
         hideIcon.className = "icon model-hide-icon";
         hideIcon.innerText = this.hidden ? "visibility_off" : "visibility";
 
+        this.starButton.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.setDefault();
+            this.starButton.classList.add("default");
+        });
+
         this.settingsItem.addEventListener("click", (e) => {
             e.stopPropagation();
             this.hidden = !this.hidden;
             hideIcon.innerText = this.hidden ? "visibility_off" : "visibility";
         });
 
+        this.settingsItem.appendChild(this.starButton);
         this.settingsItem.appendChild(icon);
         this.settingsItem.appendChild(nameDiv);
         this.settingsItem.appendChild(hideIcon);
@@ -200,6 +217,17 @@ class Model {
         );
 
         document.body.appendChild(infoPopup);
+    }
+
+    setDefault() {
+        Model.defaultModel = this.id;
+
+        for (const model of Model.models) {
+            model.isDefaultModel = model.id === this.id;
+            model.starButton.classList.toggle("default", model.isDefaultModel);
+        }
+
+        Model.saveModelSettings();
     }
 
     getAPIKey() {
@@ -347,6 +375,10 @@ class Model {
         return null;
     }
 
+    static findById(modelId) {
+        return Model.models.find((model) => model.id === modelId);
+    }
+
     static async loadModels() {
         try {
             const response = await fetch("/known_models.json");
@@ -458,6 +490,7 @@ class Model {
         const modelSettings = Model.models.map((model) => ({
             id: model.id,
             hidden: model.hidden,
+            isDefaultModel: model.isDefaultModel,
         }));
 
         localStorage.setItem("modelSettings", JSON.stringify(modelSettings));
@@ -472,6 +505,17 @@ class Model {
                 model.hidden = settings.hidden;
             }
         });
+
+        // set default model
+        const defaultModel = modelSettings.find((setting) => setting.isDefaultModel);
+        if (defaultModel) {
+            const model = Model.findById(defaultModel.id);
+            if (model) {
+                model.setDefault();
+            }
+
+            Model.setCurrentModel(defaultModel.id);
+        }
     }
 }
 
@@ -837,7 +881,7 @@ class PartView {
 
     createButton(icon, onclick) {
         const button = document.createElement("button");
-        button.classList = `icon message-button`;
+        button.className = `icon message-button`;
         button.innerText = icon;
         button.addEventListener("click", onclick);
         this.elements.buttonContainer.appendChild(button);
@@ -967,7 +1011,7 @@ class PartView {
     saveEdit() {
         if (this.part.type !== "text" || !this.editing) return;
 
-        const newText = this.elements.messageDiv.innerHTML
+        const newText = this.elements.messageDiv.textContent
             .replace(/<div>/gi, "\n")
             .replace(/<\/div>/gi, "")
             .replace(/<br>/gi, "\n")
@@ -1169,6 +1213,9 @@ function getSavedSettings() {
     const hue = localStorage.getItem("hue") || "230";
     const saturation = localStorage.getItem("saturation") || "5";
     const temperature = localStorage.getItem("temperature") || "1.0";
+    const openaiApiKey = localStorage.getItem("openaiApiKey") || "";
+    const anthropicApiKey = localStorage.getItem("anthropicApiKey") || "";
+    const saveApiKey = localStorage.getItem("saveApiKey") === "1";
 
     dom.fontSelect.value = font;
     dom.themeSelect.value = theme;
@@ -1176,9 +1223,15 @@ function getSavedSettings() {
     dom.hueValue.innerText = hue;
     dom.saturation.value = saturation;
     dom.saturationValue.innerText = saturation;
-
     dom.temperatureInput.value = temperature;
     dom.temperatureValue.innerText = temperature;
+
+    dom.saveKeyCheckbox.checked = saveApiKey;
+
+    if (saveApiKey) {
+        dom.openaiApiKeyInput.value = openaiApiKey;
+        dom.anthropicApiKeyInput.value = anthropicApiKey;
+    }
 
     document.documentElement.classList.remove("mono", "slab", "serif", "sans-serif");
     document.documentElement.classList.add(font);
@@ -1200,7 +1253,7 @@ const md = window.markdownit();
 md.set({ breaks: true });
 
 Model.loadModels().then(() => {
-    Model.buildPopup(dom.modelSelect);
+    Model.buildPopup();
     Model.setCurrentModel(Model.defaultModel);
     Model.loadModelsFromStorage();
 });
@@ -1288,6 +1341,30 @@ dom.keyButtons.forEach((button) => {
             keyContainer.classList.toggle("collapsed");
         }
     });
+});
+
+dom.openaiApiKeyInput.addEventListener("blur", () => {
+    const openaiApiKey = dom.openaiApiKeyInput.value.trim();
+    if (openaiApiKey && dom.saveKeyCheckbox.checked) {
+        localStorage.setItem("openaiApiKey", openaiApiKey);
+        dom.openaiApiKeyInput.value = openaiApiKey;
+    }
+});
+
+dom.anthropicApiKeyInput.addEventListener("blur", () => {
+    const anthropicApiKey = dom.anthropicApiKeyInput.value.trim();
+    if (anthropicApiKey && dom.saveKeyCheckbox.checked) {
+        localStorage.setItem("anthropicApiKey", anthropicApiKey);
+        dom.anthropicApiKeyInput.value = anthropicApiKey;
+    }
+});
+
+dom.saveKeyCheckbox.addEventListener("change", (e) => {
+    localStorage.setItem("saveApiKey", e.target.checked ? "1" : "0");
+    if (!e.target.checked) {
+        localStorage.removeItem("openaiApiKey");
+        localStorage.removeItem("anthropicApiKey");
+    }
 });
 
 dom.fontSelect.addEventListener("change", (e) => {
