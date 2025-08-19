@@ -764,10 +764,6 @@ class Message {
         this.conversation = conversation;
         this.role = role;
 
-        if (this.role === "assistant") {
-            this.model = Model.getCurrentModel();
-        }
-
         this.timestamp = new Date().toISOString();
 
         this.parts = [];
@@ -820,7 +816,6 @@ class Message {
 
         for (const part of this.parts) {
             if (part.type === "image") {
-                console.log("image found!");
                 const img = part.view.elements.messageContainer;
                 imageContainer.appendChild(img);
                 imageContainer.classList.remove("hidden");
@@ -850,6 +845,11 @@ class MessagePart {
         this.message = message;
         this.type = type;
         this.content = content;
+
+        if (this.message.role === "assistant") {
+            this.model = Model.getCurrentModel();
+        }
+
         this.view = new PartView(this);
     }
 
@@ -935,6 +935,8 @@ class PartView {
 
             if (this.part.message.role === "user") {
                 el.messageDiv.classList.add("dark");
+            } else if (this.part.message.role === "assistant") {
+                el.messageDiv.title = `Model: ${this.part.model.name}`;
             }
 
             el.buttonContainer = document.createElement("div");
