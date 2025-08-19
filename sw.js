@@ -50,8 +50,16 @@ self.addEventListener("fetch", (event) => {
     if (!OFFLINE_ASSETS.includes(request.url) && !OFFLINE_ASSETS.includes(new URL(request.url).pathname)) return;
 
     event.respondWith(
-        caches
-            .match(event.request)
-            .then((cachedResp) => cachedResp || fetch(request).catch(() => (request.mode === "navigate" ? caches.match("/") : undefined)))
+        caches.match(request).then((cachedResp) => {
+            const networkFetch = fetch(request)
+                .then((resp) => {
+                    return caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, resp.clone());
+                        return resp;
+                    });
+                })
+                .catch(() => cachedResp);
+            return cachedResp || networkFetch;
+        })
     );
 });
