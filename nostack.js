@@ -1446,3 +1446,16 @@ dom.modelSettingsPopup.addEventListener("click", (e) => {
         dom.modelSettingsPopup.classList.add("hidden");
     }
 });
+
+let sw;
+
+// service worker for PWA
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then(
+        (reg) => {
+            console.log("SW registered", reg)
+            sw = reg;
+        },
+        (err) => console.error("SW failed", err)
+    );
+}
