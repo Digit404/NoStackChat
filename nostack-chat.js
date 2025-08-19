@@ -1,54 +1,58 @@
 const dom = {
-    mainDiv: document.getElementById('main'),
-    messagesDiv: document.getElementById('messages'),
-    messagesViewport: document.getElementById('messages-viewport'),
+    mainDiv: document.getElementById("main"),
+    messagesDiv: document.getElementById("messages"),
+    messagesViewport: document.getElementById("messages-viewport"),
 
-    pendingImagesContainer: document.getElementById('pending-images-container'),
-    promptInput: document.getElementById('prompt'),
-    sendButton: document.getElementById('send'),
-    addButton: document.getElementById('add'),
+    pendingImagesContainer: document.getElementById("pending-images-container"),
+    promptInput: document.getElementById("prompt"),
+    sendButton: document.getElementById("send"),
+    addButton: document.getElementById("add"),
 
-    keyButtons: document.querySelectorAll('.key-button'),
+    keyButtons: document.querySelectorAll(".key-button"),
 
-    openaiApiKeyInput: document.getElementById('openai-api-key'),
-    anthropicApiKeyInput: document.getElementById('anthropic-api-key'),
+    openaiApiKeyInput: document.getElementById("openai-api-key"),
+    anthropicApiKeyInput: document.getElementById("anthropic-api-key"),
     // verifyOpenaiButton: document.getElementById('verify-openai-button'),
     // verifyAnthropicButton: document.getElementById('verify-anthropic-button'),
 
-    newChatButton: document.getElementById('new-chat-button'),
+    newChatButton: document.getElementById("new-chat-button"),
 
-    popup: document.getElementById('popup'),
-    popupClose: document.getElementById('popup-close'),
+    popup: document.getElementById("popup"),
+    popupClose: document.getElementById("popup-close"),
 
-    modelSelect: document.getElementById('model-select'),
-    currentModel: document.getElementById('current-model'),
-    modelPopup: document.getElementById('model-popup'),
-    modelList: document.getElementById('model-list'),
+    modelSelect: document.getElementById("model-select"),
+    currentModel: document.getElementById("current-model"),
+    modelPopup: document.getElementById("model-popup"),
+    modelList: document.getElementById("model-list"),
 
-    settingsPopup: document.getElementById('settings-popup'),
-    settingsButton: document.getElementById('settings-button'),
+    modelSettingsButton: null,
+    modelSettingsPopup: document.getElementById("model-settings-popup"),
+    modelListContainer: document.querySelector(".model-list-container"),
 
-    systemPromptInput: document.getElementById('system-prompt'),
+    settingsPopup: document.getElementById("settings-popup"),
+    settingsButton: document.getElementById("settings-button"),
 
-    temperatureInput: document.getElementById('temperature'),
-    temperatureValue: document.getElementById('temperature-value'),
+    systemPromptInput: document.getElementById("system-prompt"),
 
-    themeSelect: document.getElementById('theme-select'),
-    fontSelect: document.getElementById('font-select'),
+    temperatureInput: document.getElementById("temperature"),
+    temperatureValue: document.getElementById("temperature-value"),
 
-    hue: document.getElementById('hue'),
-    saturation: document.getElementById('saturation'),
+    themeSelect: document.getElementById("theme-select"),
+    fontSelect: document.getElementById("font-select"),
 
-    hueValue: document.getElementById('hue-value'),
-    saturationValue: document.getElementById('saturation-value'),
+    hue: document.getElementById("hue"),
+    saturation: document.getElementById("saturation"),
+
+    hueValue: document.getElementById("hue-value"),
+    saturationValue: document.getElementById("saturation-value"),
 };
 
 class Model {
     static models = [];
     static currentModel = null;
-    static defaultModel = 'gpt-4.1';
-    static OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-    static ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+    static defaultModel = "gpt-4.1";
+    static OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+    static ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
     constructor(data) {
         this.id = data.id;
@@ -57,65 +61,126 @@ class Model {
         this.description = data.description;
         this.icon = data.icon;
         this.color = data.color;
-        this.type = data.type || 'standard';
+        this.type = data.type || "standard";
         this.capabilities = data.capabilities || [];
         this.flags = data.flags || [];
+        this._hidden = false;
 
-        if (this.provider === 'OpenAI') {
+        this.popupItem = null;
+        this.settingsItem = null;
+
+        if (this.provider === "OpenAI") {
             this.url = Model.OPENAI_API_URL;
-        } else if (this.provider === 'Anthropic') {
+        } else if (this.provider === "Anthropic") {
             this.url = Model.ANTHROPIC_API_URL;
         }
     }
 
-    createPopupItem() {
-        const item = document.createElement('div');
-        item.className = 'model-item';
-        item.title = this.description;
+    get hidden() {
+        return this._hidden;
+    }
 
-        const icon = document.createElement('img');
+    set hidden(value) {
+        this._hidden = value;
+
+        if (this.popupItem) {
+            if (value) {
+                this.popupItem.classList.add("hidden");
+            } else {
+                this.popupItem.classList.remove("hidden");
+            }
+        }
+
+        if (this.settingsItem) {
+            const hideIcon = this.settingsItem.querySelector(".model-hide-icon");
+            if (hideIcon) {
+                hideIcon.innerText = value ? "visibility_off" : "visibility";
+                this.settingsItem.classList.toggle("invisible", value);
+            }
+        }
+
+        Model.saveModelSettings();
+    }
+
+    createPopupItem() {
+        this.popupItem = document.createElement("div");
+        this.popupItem.className = "model-item";
+        this.popupItem.title = this.description;
+
+        const icon = document.createElement("img");
         icon.src = this.icon;
         icon.alt = this.name;
-        icon.className = 'model-icon';
+        icon.className = "model-icon";
 
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'model-name';
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "model-name";
         nameDiv.innerText = this.name;
 
-        const infoIcon = document.createElement('span');
-        infoIcon.className = 'icon model-info-icon';
-        infoIcon.innerText = 'info';
+        const infoIcon = document.createElement("span");
+        infoIcon.className = "icon model-info-icon";
+        infoIcon.innerText = "info";
 
-        infoIcon.addEventListener('mouseover', (e) => {
+        infoIcon.addEventListener("mouseover", (e) => {
             this.createInfoPopup(e.clientX, e.clientY);
         });
 
-        item.appendChild(icon);
-        item.appendChild(nameDiv);
-        item.appendChild(infoIcon);
+        this.popupItem.appendChild(icon);
+        this.popupItem.appendChild(nameDiv);
+        this.popupItem.appendChild(infoIcon);
 
-        item.addEventListener('click', () => {
+        this.popupItem.addEventListener("click", () => {
             Model.setCurrentModel(this.id);
-            dom.modelPopup.classList.add('hidden');
+            dom.modelPopup.classList.add("hidden");
         });
 
-        return item;
+        return this.popupItem;
+    }
+
+    createSettingsItem() {
+        this.settingsItem = document.createElement("div");
+        this.settingsItem.className = "model-item";
+        this.settingsItem.title = this.description;
+
+        const icon = document.createElement("img");
+        icon.src = this.icon;
+        icon.alt = this.name;
+        icon.className = "model-icon";
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "model-name";
+        nameDiv.innerText = this.name;
+
+        const hideIcon = document.createElement("span");
+        hideIcon.className = "icon model-hide-icon";
+        hideIcon.innerText = this.hidden ? "visibility_off" : "visibility";
+
+        this.settingsItem.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.hidden = !this.hidden;
+            hideIcon.innerText = this.hidden ? "visibility_off" : "visibility";
+        });
+
+        this.settingsItem.appendChild(icon);
+        this.settingsItem.appendChild(nameDiv);
+        this.settingsItem.appendChild(hideIcon);
+
+        return this.settingsItem;
     }
 
     createInfoPopup(x, y) {
-        const infoPopup = document.createElement('div');
-        infoPopup.className = 'model-info-popup';
+        const infoPopup = document.createElement("div");
+        infoPopup.className = "model-info-popup";
 
-        const title = document.createElement('h3');
-        title.className = 'model-info-title';
+        const title = document.createElement("h3");
+        title.className = "model-info-title";
         title.innerText = this.name;
 
-        const description = document.createElement('p');
-        description.className = 'model-info-description';
+        const description = document.createElement("p");
+        description.className = "model-info-description";
         description.innerText = this.description;
 
-        const provider = document.createElement('p');
-        provider.className = 'model-info-provider';
+        const provider = document.createElement("p");
+        provider.className = "model-info-provider";
         provider.innerHTML = `<strong>Provider:</strong> ${this.provider}`;
 
         infoPopup.appendChild(title);
@@ -127,7 +192,7 @@ class Model {
         infoPopup.style.top = `${y - 10}px`;
 
         infoPopup.addEventListener(
-            'mouseleave',
+            "mouseleave",
             () => {
                 infoPopup.remove();
             },
@@ -138,20 +203,20 @@ class Model {
     }
 
     getAPIKey() {
-        if (this.provider === 'OpenAI') {
+        if (this.provider === "OpenAI") {
             return dom.openaiApiKeyInput.value.trim();
-        } else if (this.provider === 'Anthropic') {
+        } else if (this.provider === "Anthropic") {
             return dom.anthropicApiKeyInput.value.trim();
         }
-        return '';
+        return "";
     }
 
     async getStreamResponse(messages, temperature, abortSignal) {
-        if (this.provider === 'OpenAI') {
+        if (this.provider === "OpenAI") {
             const apiKey = this.getAPIKey();
 
             if (!apiKey) {
-                throw new Error('API key is required.');
+                throw new Error("API key is required.");
             }
 
             const requestBody = {
@@ -160,14 +225,14 @@ class Model {
                 stream: true,
             };
 
-            if (temperature && !this.flags.includes('temperature_unsupported')) {
+            if (temperature && !this.flags.includes("temperature_unsupported")) {
                 requestBody.temperature = temperature;
             }
 
             const response = await fetch(this.url, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify(requestBody),
@@ -176,7 +241,7 @@ class Model {
 
             if (!response.ok) {
                 let errorText = await response.text();
-                let errorMsg = 'Unknown error';
+                let errorMsg = "Unknown error";
                 try {
                     errorMsg = JSON.parse(errorText).error?.message || errorText;
                 } catch {
@@ -186,16 +251,16 @@ class Model {
             }
 
             return response.body.getReader();
-        } else if (this.provider === 'Anthropic') {
+        } else if (this.provider === "Anthropic") {
             const apiKey = this.getAPIKey();
 
             if (!apiKey) {
-                throw new Error('API key is required.');
+                throw new Error("API key is required.");
             }
 
             // convert messages format for Anthropic
-            const anthropicMessages = messages.filter((msg) => msg.role !== 'system');
-            const systemMessage = messages.find((msg) => msg.role === 'system');
+            const anthropicMessages = messages.filter((msg) => msg.role !== "system");
+            const systemMessage = messages.find((msg) => msg.role === "system");
 
             const requestBody = {
                 model: this.id,
@@ -207,7 +272,7 @@ class Model {
                 max_tokens: 8192,
             };
 
-            if (temperature && !this.flags.includes('temperature_unsupported')) {
+            if (temperature && !this.flags.includes("temperature_unsupported")) {
                 requestBody.temperature = temperature / 2; // Anthropic uses a different scale
             }
 
@@ -217,12 +282,12 @@ class Model {
             }
 
             const response = await fetch(this.url, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true', // only way to get access from browser
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-dangerous-direct-browser-access": "true", // only way to get access from browser
                 },
                 body: JSON.stringify(requestBody),
                 signal: abortSignal,
@@ -230,7 +295,7 @@ class Model {
 
             if (!response.ok) {
                 let errorText = await response.text();
-                let errorMsg = 'Unknown error';
+                let errorMsg = "Unknown error";
                 try {
                     const errorData = JSON.parse(errorText);
                     errorMsg = errorData.error?.message || errorData.message || errorText;
@@ -247,9 +312,9 @@ class Model {
     parseStreamChunk(line) {
         if (!line || !line.trim()) return null;
 
-        if (this.provider === 'OpenAI') {
-            if (line === 'data: [DONE]') return { done: true };
-            if (!line.startsWith('data: ')) return null;
+        if (this.provider === "OpenAI") {
+            if (line === "data: [DONE]") return { done: true };
+            if (!line.startsWith("data: ")) return null;
 
             try {
                 const payload = JSON.parse(line.slice(6));
@@ -258,19 +323,19 @@ class Model {
             } catch {
                 return null;
             }
-        } else if (this.provider === 'Anthropic') {
-            if (line.startsWith('event: ')) {
+        } else if (this.provider === "Anthropic") {
+            if (line.startsWith("event: ")) {
                 const event = line.slice(7);
-                if (event === 'message_stop') return { done: true };
+                if (event === "message_stop") return { done: true };
                 return null;
             }
 
-            if (!line.startsWith('data: ')) return null;
+            if (!line.startsWith("data: ")) return null;
 
             try {
                 const payload = JSON.parse(line.slice(6));
 
-                if (payload.type === 'content_block_delta' && payload.delta?.type === 'text_delta') {
+                if (payload.type === "content_block_delta" && payload.delta?.type === "text_delta") {
                     return { content: payload.delta.text };
                 }
                 return null;
@@ -284,11 +349,11 @@ class Model {
 
     static async loadModels() {
         try {
-            const response = await fetch('/known_models.json');
+            const response = await fetch("/known_models.json");
             const modelsData = await response.json();
             Model.models = modelsData.map((data) => new Model(data));
         } catch (error) {
-            console.error('Failed to load models:', error);
+            console.error("Failed to load models:", error);
         }
 
         // set default model if not already set
@@ -310,33 +375,59 @@ class Model {
             return acc;
         }, []);
 
-        dom.modelPopup.innerHTML = ''; // clear existing content
+        dom.modelPopup.innerHTML = ""; // clear existing content
 
+        dom.modelSettingsButton = document.createElement("div");
+        dom.modelSettingsButton.id = "model-settings";
+        dom.modelSettingsButton.className = "icon";
+        dom.modelSettingsButton.innerHTML = `edit`;
+        dom.modelSettingsButton.title = "Edit model list";
+        dom.modelPopup.appendChild(dom.modelSettingsButton);
+
+        dom.modelSettingsButton.addEventListener("click", (e) => {
+            e.stopPropagation();
+            dom.modelPopup.classList.add("hidden");
+            dom.modelSettingsPopup.classList.toggle("hidden");
+        });
+
+        // build model popup sections
         providers.forEach((provider) => {
-            const typeSection = document.createElement('div');
-            typeSection.className = 'model-list-section';
+            const typeSection = document.createElement("div");
+            typeSection.className = "model-list-section";
             typeSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
-            const typeList = document.createElement('div');
-            typeList.className = 'model-list';
+
+            const typeList = document.createElement("div");
+            typeList.className = "model-list";
             typeSection.appendChild(typeList);
             dom.modelPopup.appendChild(typeSection);
+
+            const settingsTypeSection = document.createElement("div");
+            settingsTypeSection.className = "model-list-section";
+            settingsTypeSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
+
+            const settingsTypeList = document.createElement("div");
+            settingsTypeList.className = "model-list";
+            settingsTypeSection.appendChild(settingsTypeList);
+            dom.modelListContainer.appendChild(settingsTypeSection);
+
             Model.models
                 .filter((model) => model.provider === provider)
                 .forEach((model) => {
                     typeList.appendChild(model.createPopupItem());
+                    settingsTypeList.appendChild(model.createSettingsItem());
                 });
         });
 
-        dom.modelSelect.addEventListener('click', (e) => {
+        dom.modelSelect.addEventListener("click", (e) => {
             e.stopPropagation();
-            dom.modelPopup.classList.toggle('hidden');
+            dom.modelPopup.classList.toggle("hidden");
 
             // click outside to close
             document.addEventListener(
-                'click',
+                "click",
                 (event) => {
                     if (!dom.modelPopup.contains(event.target) && !dom.modelSelect.contains(event.target)) {
-                        dom.modelPopup.classList.add('hidden');
+                        dom.modelPopup.classList.add("hidden");
                     }
                 },
                 { once: true }
@@ -349,7 +440,7 @@ class Model {
         if (model) {
             Model.currentModel = model;
             dom.currentModel.innerText = model.name;
-            dom.modelSelect.querySelector('.model-icon').src = model.icon;
+            dom.modelSelect.querySelector(".model-icon").src = model.icon;
         } else {
             console.warn(`Model with id ${modelId} not found.`);
         }
@@ -357,10 +448,30 @@ class Model {
 
     static getCurrentModel() {
         if (!Model.currentModel) {
-            console.warn('No current model set. Returning default model.');
+            console.warn("No current model set. Returning default model.");
             return Model.models.find((m) => m.id === Model.defaultModel);
         }
         return Model.currentModel;
+    }
+
+    static saveModelSettings() {
+        const modelSettings = Model.models.map((model) => ({
+            id: model.id,
+            hidden: model.hidden,
+        }));
+
+        localStorage.setItem("modelSettings", JSON.stringify(modelSettings));
+    }
+
+    static loadModelsFromStorage() {
+        const modelSettings = JSON.parse(localStorage.getItem("modelSettings")) || [];
+        Model.models.forEach((model) => {
+            const settings = modelSettings.find((setting) => setting.id === model.id);
+
+            if (settings) {
+                model.hidden = settings.hidden;
+            }
+        });
     }
 }
 
@@ -378,7 +489,7 @@ class Conversation {
     }
 
     redraw() {
-        dom.messagesDiv.innerHTML = '';
+        dom.messagesDiv.innerHTML = "";
         this.messages.forEach((message) => {
             message.addToDOM();
         });
@@ -440,8 +551,8 @@ class Conversation {
     }
 
     displayError(message) {
-        const errorMessage = new Message(this, 'error');
-        errorMessage.addPart('text', message);
+        const errorMessage = new Message(this, "error");
+        errorMessage.addPart("text", message);
         errorMessage.addToDOM();
     }
 
@@ -449,7 +560,7 @@ class Conversation {
         if (this.generating) {
             // stop generating if already generating
             this.interrupt();
-            dom.sendButton.innerText = 'send';
+            dom.sendButton.innerText = "send";
             return;
         }
 
@@ -461,21 +572,21 @@ class Conversation {
         }
 
         // add chat class to mainDiv if not already present
-        dom.mainDiv.classList.add('chat');
+        dom.mainDiv.classList.add("chat");
 
         const lastMessage = this.getLastMessage();
         let userMessage = null;
 
-        if (lastMessage && lastMessage.role === 'user') {
+        if (lastMessage && lastMessage.role === "user") {
             // if last message is from user, append to it
             userMessage = lastMessage;
         } else {
             // create a new user message
-            userMessage = new Message(this, 'user');
+            userMessage = new Message(this, "user");
             this.messages.push(userMessage);
         }
 
-        userMessage.addPart('text', prompt);
+        userMessage.addPart("text", prompt);
 
         if (hasPendingImages) {
             // apply pending images to the user message
@@ -483,8 +594,8 @@ class Conversation {
         }
 
         // clear input
-        dom.promptInput.value = '';
-        dom.promptInput.style.height = 'auto';
+        dom.promptInput.value = "";
+        dom.promptInput.style.height = "auto";
 
         // add user message to DOM
         userMessage.addToDOM();
@@ -496,20 +607,20 @@ class Conversation {
 
     async createResponse() {
         // remove error messages
-        const errorMessages = dom.messagesDiv.querySelectorAll('.message-container.error');
+        const errorMessages = dom.messagesDiv.querySelectorAll(".message-container.error");
         errorMessages.forEach((message) => message.remove());
 
         try {
             this.generating = true;
-            dom.sendButton.innerText = 'stop';
+            dom.sendButton.innerText = "stop";
             await this.streamResponse();
         } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error('Error during response streaming:', error);
+            if (error.name !== "AbortError") {
+                console.error("Error during response streaming:", error);
             }
         } finally {
             this.generating = false;
-            dom.sendButton.innerText = 'send';
+            dom.sendButton.innerText = "send";
         }
     }
 
@@ -517,9 +628,9 @@ class Conversation {
         const messages = this.toAPIFormat();
         const model = Model.getCurrentModel();
 
-        const BotMessage = new Message(this, 'assistant');
+        const BotMessage = new Message(this, "assistant");
         this.messages.push(BotMessage);
-        const part = BotMessage.addPart('text', ''); // start with empty text part
+        const part = BotMessage.addPart("text", ""); // start with empty text part
         part.view.setPending(); // set pending state for the part
         BotMessage.addToDOM();
 
@@ -537,9 +648,9 @@ class Conversation {
             return;
         }
 
-        const decoder = new TextDecoder('utf-8');
+        const decoder = new TextDecoder("utf-8");
 
-        let buffer = '';
+        let buffer = "";
 
         const shouldAutoScroll = () => {
             const scrollPosition = window.scrollY + window.innerHeight;
@@ -554,7 +665,7 @@ class Conversation {
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
+            const lines = buffer.split("\n");
             buffer = lines.pop();
 
             for (let line of lines) {
@@ -566,7 +677,7 @@ class Conversation {
                 if (parsed.content) {
                     if (part.view.pending) {
                         part.view.pending = false;
-                        part.setContent('');
+                        part.setContent("");
                     }
 
                     BotMessage.parts[0].content += parsed.content;
@@ -576,7 +687,7 @@ class Conversation {
                     if (shouldAutoScroll()) {
                         window.scrollTo({
                             top: document.body.scrollHeight,
-                            behavior: 'smooth',
+                            behavior: "smooth",
                         });
                     }
                 }
@@ -587,15 +698,15 @@ class Conversation {
     static scrollDown() {
         window.scrollTo({
             top: document.body.scrollHeight,
-            behavior: 'smooth',
+            behavior: "smooth",
         });
     }
 
     static getSystemPrompt() {
-        const systemPrompt = dom.systemPromptInput.value.trim() || 'A helpful assistant.';
+        const systemPrompt = dom.systemPromptInput.value.trim() || "A helpful assistant.";
         if (systemPrompt) {
             return {
-                role: 'system',
+                role: "system",
                 content: systemPrompt,
             };
         }
@@ -604,7 +715,7 @@ class Conversation {
 }
 
 class Message {
-    constructor(conversation, role = 'user') {
+    constructor(conversation, role = "user") {
         this.id = conversation.idCounter++;
         this.conversation = conversation;
         this.role = role;
@@ -642,7 +753,7 @@ class Message {
             part.destroy();
             this.parts.splice(index, 1);
         } else {
-            console.warn('Part not found in message.');
+            console.warn("Part not found in message.");
         }
 
         if (this.parts.length === 0) {
@@ -652,34 +763,34 @@ class Message {
 
     addToDOM() {
         // display images first
-        const imageContainer = document.createElement('div');
-        imageContainer.classList.add('message-images', this.role);
-        imageContainer.classList.add('hidden');
+        const imageContainer = document.createElement("div");
+        imageContainer.classList.add("message-images", this.role);
+        imageContainer.classList.add("hidden");
         dom.messagesDiv.appendChild(imageContainer);
 
         for (const part of this.parts) {
-            if (part.type === 'image') {
-                console.log('image found!');
+            if (part.type === "image") {
+                console.log("image found!");
                 const img = part.view.elements.messageContainer;
                 imageContainer.appendChild(img);
-                imageContainer.classList.remove('hidden');
+                imageContainer.classList.remove("hidden");
             }
         }
 
         for (const part of this.parts) {
-            if (part.type !== 'image') {
+            if (part.type !== "image") {
                 dom.messagesDiv.appendChild(part.view.elements.messageContainer);
             }
         }
     }
 
     regenerate() {
-        if (this.role !== 'assistant' && this.role !== 'error') return;
+        if (this.role !== "assistant" && this.role !== "error") return;
 
         this.conversation.removeMessagesAfter(this.id);
         this.conversation.removeMessage(this.id);
         this.conversation.generating = false;
-        dom.sendButton.innerText = 'send';
+        dom.sendButton.innerText = "send";
         this.conversation.createResponse();
     }
 }
@@ -698,10 +809,10 @@ class MessagePart {
     }
 
     toAPIFormat() {
-        if (this.type === 'text') {
-            return { type: 'text', text: this.content };
-        } else if (this.type === 'image') {
-            return { type: 'image_url', image_url: { url: this.content } };
+        if (this.type === "text") {
+            return { type: "text", text: this.content };
+        } else if (this.type === "image") {
+            return { type: "image_url", image_url: { url: this.content } };
         }
         return null;
     }
@@ -725,24 +836,24 @@ class PartView {
     }
 
     createButton(icon, onclick) {
-        const button = document.createElement('button');
+        const button = document.createElement("button");
         button.classList = `icon message-button`;
         button.innerText = icon;
-        button.addEventListener('click', onclick);
+        button.addEventListener("click", onclick);
         this.elements.buttonContainer.appendChild(button);
         return button;
     }
 
     updateContent() {
         this.pending = false;
-        this.elements.messageDiv.classList.remove('pending');
+        this.elements.messageDiv.classList.remove("pending");
         if (this.elements.messageDiv) {
             this.elements.messageDiv.innerHTML = DOMPurify.sanitize(md.render(this.part.content));
         }
 
         if (window.hljs) {
             // highlight code blocks
-            const codeBlocks = this.elements.messageDiv.querySelectorAll('pre code');
+            const codeBlocks = this.elements.messageDiv.querySelectorAll("pre code");
             codeBlocks.forEach((block) => {
                 hljs.highlightElement(block);
             });
@@ -754,45 +865,45 @@ class PartView {
     build() {
         // create container
         const el = this.elements;
-        el.messageContainer = document.createElement('div');
+        el.messageContainer = document.createElement("div");
         el.messageContainer.classList.add(this.part.message.role);
 
         // create message part
-        if (this.part.type === 'text') {
-            el.messageContainer.classList.add('message-container');
-            el.messageDiv = document.createElement('div');
-            el.messageDiv.classList.add('message', this.part.message.role);
+        if (this.part.type === "text") {
+            el.messageContainer.classList.add("message-container");
+            el.messageDiv = document.createElement("div");
+            el.messageDiv.classList.add("message", this.part.message.role);
 
-            if (this.part.message.role === 'user') {
-                el.messageDiv.classList.add('dark');
+            if (this.part.message.role === "user") {
+                el.messageDiv.classList.add("dark");
             }
 
-            el.buttonContainer = document.createElement('div');
-            el.buttonContainer.classList.add('message-button-container');
+            el.buttonContainer = document.createElement("div");
+            el.buttonContainer.classList.add("message-button-container");
 
-            this.buttons.cancelButton = this.createButton('cancel', () => this.cancelEdit());
-            this.buttons.editButton = this.createButton('edit', () => this.edit());
-            this.buttons.saveButton = this.createButton('save', () => this.saveEdit());
-            this.buttons.resendButton = this.createButton('send', () => this.saveAndSend());
-            this.buttons.copyButton = this.createButton('content_copy', () => this.copyText());
-            this.buttons.deleteButton = this.createButton('delete', () => this.part.message.removePart(this.part));
-            this.buttons.regenerateButton = this.createButton('refresh', () => this.part.message.regenerate());
+            this.buttons.cancelButton = this.createButton("cancel", () => this.cancelEdit());
+            this.buttons.editButton = this.createButton("edit", () => this.edit());
+            this.buttons.saveButton = this.createButton("save", () => this.saveEdit());
+            this.buttons.resendButton = this.createButton("send", () => this.saveAndSend());
+            this.buttons.copyButton = this.createButton("content_copy", () => this.copyText());
+            this.buttons.deleteButton = this.createButton("delete", () => this.part.message.removePart(this.part));
+            this.buttons.regenerateButton = this.createButton("refresh", () => this.part.message.regenerate());
 
             this.updateButtonVisibility();
 
             el.messageContainer.appendChild(el.messageDiv);
             el.messageContainer.appendChild(el.buttonContainer);
-        } else if (this.part.type === 'image') {
+        } else if (this.part.type === "image") {
             el.messageContainer.classList.add(`message-image-container`);
-            el.messageDiv = document.createElement('img');
+            el.messageDiv = document.createElement("img");
             el.messageDiv.src = this.part.content;
-            el.messageDiv.alt = 'Uploaded image';
-            el.messageDiv.classList.add('message-image');
-            el.removeButton = document.createElement('button');
-            el.removeButton.classList.add('icon', 'remove-image-button');
-            el.removeButton.innerText = 'close';
+            el.messageDiv.alt = "Uploaded image";
+            el.messageDiv.classList.add("message-image");
+            el.removeButton = document.createElement("button");
+            el.removeButton.classList.add("icon", "remove-image-button");
+            el.removeButton.innerText = "close";
 
-            el.removeButton.addEventListener('click', () => {
+            el.removeButton.addEventListener("click", () => {
                 this.part.destroy();
             });
 
@@ -803,44 +914,44 @@ class PartView {
 
     setPending() {
         this.pending = true;
-        this.elements.messageDiv.classList.add('pending');
-        this.elements.messageDiv.innerHTML = '';
+        this.elements.messageDiv.classList.add("pending");
+        this.elements.messageDiv.innerHTML = "";
         for (let i = 0; i < 3; i++) {
-            const pendingBar = document.createElement('div');
-            pendingBar.classList.add('pending-bar');
+            const pendingBar = document.createElement("div");
+            pendingBar.classList.add("pending-bar");
             this.elements.messageDiv.appendChild(pendingBar);
         }
         this.updateButtonVisibility();
     }
 
     copyText() {
-        if (this.part.type === 'text') {
+        if (this.part.type === "text") {
             navigator.clipboard
                 .writeText(this.part.content)
                 .then(() => {
-                    this.buttons.copyButton.innerText = 'check';
+                    this.buttons.copyButton.innerText = "check";
                     setTimeout(() => {
-                        this.buttons.copyButton.innerText = 'content_copy';
+                        this.buttons.copyButton.innerText = "content_copy";
                     }, 1000);
                 })
                 .catch((error) => {
                     // really unnecessary error handling
-                    console.error('Failed to copy text: ', error);
-                    this.buttons.copyButton.innerText = 'error';
+                    console.error("Failed to copy text: ", error);
+                    this.buttons.copyButton.innerText = "error";
                     setTimeout(() => {
-                        this.buttons.copyButton.innerText = 'content_copy';
+                        this.buttons.copyButton.innerText = "content_copy";
                     }, 1000);
                 });
         }
     }
 
     edit() {
-        if (this.part.type !== 'text' || this.editing) return;
+        if (this.part.type !== "text" || this.editing) return;
 
         this.editing = true;
-        this.elements.messageContainer.classList.add('editing');
+        this.elements.messageContainer.classList.add("editing");
         this.elements.messageDiv.innerHTML = this.part.content;
-        this.elements.messageDiv.contentEditable = 'true';
+        this.elements.messageDiv.contentEditable = "true";
         this.elements.messageDiv.focus();
 
         this.updateButtonVisibility();
@@ -854,25 +965,25 @@ class PartView {
     }
 
     saveEdit() {
-        if (this.part.type !== 'text' || !this.editing) return;
+        if (this.part.type !== "text" || !this.editing) return;
 
         const newText = this.elements.messageDiv.innerHTML
-            .replace(/<div>/gi, '\n')
-            .replace(/<\/div>/gi, '')
-            .replace(/<br>/gi, '\n')
+            .replace(/<div>/gi, "\n")
+            .replace(/<\/div>/gi, "")
+            .replace(/<br>/gi, "\n")
             .trim();
 
         this.part.setContent(newText);
         this.editing = false;
-        this.elements.messageDiv.contentEditable = 'false';
-        this.elements.messageContainer.classList.remove('editing');
+        this.elements.messageDiv.contentEditable = "false";
+        this.elements.messageContainer.classList.remove("editing");
         this.elements.messageDiv.blur();
 
         this.updateButtonVisibility();
     }
 
     saveAndSend() {
-        if (this.part.type !== 'text' || !this.editing || this.part.message.role !== 'user') return;
+        if (this.part.type !== "text" || !this.editing || this.part.message.role !== "user") return;
 
         this.saveEdit();
         this.part.message.conversation.removeMessagesAfter(this.part.message.id);
@@ -880,11 +991,11 @@ class PartView {
     }
 
     cancelEdit() {
-        if (this.part.type !== 'text' || !this.editing) return;
+        if (this.part.type !== "text" || !this.editing) return;
 
         this.editing = false;
-        this.elements.messageDiv.contentEditable = 'false';
-        this.elements.messageContainer.classList.remove('editing');
+        this.elements.messageDiv.contentEditable = "false";
+        this.elements.messageContainer.classList.remove("editing");
         this.updateContent();
         this.elements.messageDiv.blur();
 
@@ -898,85 +1009,85 @@ class PartView {
         vis.push(b.copyButton);
         vis.push(b.deleteButton);
 
-        if (this.part.message.role === 'error') {
+        if (this.part.message.role === "error") {
             vis.push(b.regenerateButton);
-        } else if (this.part.type === 'text') {
+        } else if (this.part.type === "text") {
             if (this.editing) {
                 vis.push(b.saveButton);
                 vis.push(b.cancelButton);
 
-                if (this.part.message.role === 'user') {
+                if (this.part.message.role === "user") {
                     vis.push(b.resendButton);
                 }
             } else {
                 vis.push(b.editButton);
             }
 
-            if (this.part.message.role === 'assistant') {
+            if (this.part.message.role === "assistant") {
                 vis.push(b.regenerateButton);
             }
         }
 
         for (const button of Object.values(b)) {
             if (vis.includes(button)) {
-                button.classList.remove('hidden');
+                button.classList.remove("hidden");
             } else {
-                button.classList.add('hidden');
+                button.classList.add("hidden");
             }
         }
     }
 
     addCopyButtons() {
-        for (const block of this.elements.messageDiv.querySelectorAll('pre:has(code)')) {
-            if (block.parentNode.classList.contains('code-wrapper')) {
+        for (const block of this.elements.messageDiv.querySelectorAll("pre:has(code)")) {
+            if (block.parentNode.classList.contains("code-wrapper")) {
                 continue; // already wrapped
             }
 
-            const wrapper = document.createElement('div');
-            wrapper.className = 'code-wrapper';
+            const wrapper = document.createElement("div");
+            wrapper.className = "code-wrapper";
 
             block.parentNode.insertBefore(wrapper, block);
             wrapper.appendChild(block);
 
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'code-buttons';
+            const buttonContainer = document.createElement("div");
+            buttonContainer.className = "code-buttons";
             wrapper.appendChild(buttonContainer);
 
-            const collapseButton = document.createElement('button');
-            collapseButton.className = 'icon button collapse-button';
-            collapseButton.innerText = 'expand_less';
+            const collapseButton = document.createElement("button");
+            collapseButton.className = "icon button collapse-button";
+            collapseButton.innerText = "expand_less";
             buttonContainer.appendChild(collapseButton);
 
-            collapseButton.addEventListener('click', () => {
-                if (wrapper.classList.contains('collapsed')) {
-                    wrapper.classList.remove('collapsed');
-                    collapseButton.innerText = 'expand_less';
+            collapseButton.addEventListener("click", () => {
+                if (wrapper.classList.contains("collapsed")) {
+                    wrapper.classList.remove("collapsed");
+                    collapseButton.innerText = "expand_less";
                 } else {
-                    wrapper.classList.add('collapsed');
-                    collapseButton.innerText = 'expand_more';
+                    wrapper.classList.add("collapsed");
+                    collapseButton.innerText = "expand_more";
                 }
             });
 
-            const copyButton = document.createElement('button');
-            copyButton.className = 'icon button copy-button';
-            copyButton.innerText = 'content_copy';
+            const copyButton = document.createElement("button");
+            copyButton.className = "icon button copy-button";
+            copyButton.innerText = "content_copy";
             buttonContainer.appendChild(copyButton);
 
-            copyButton.addEventListener('click', () => {
+            copyButton.addEventListener("click", () => {
                 const codeText = block.innerText || block.textContent;
                 navigator.clipboard
                     .writeText(codeText)
                     .then(() => {
-                        copyButton.innerText = 'check';
+                        copyButton.innerText = "check";
                         setTimeout(() => {
-                            copyButton.innerText = 'content_copy';
+                            copyButton.innerText = "content_copy";
                         }, 2000);
                     })
                     .catch((error) => {
-                        console.error('Failed to copy code: ', error);
-                        copyButton.innerText = 'error';
+                        console.error("Failed to copy code: ", error);
+                        copyButton.innerText = "error";
                         setTimeout(() => {
-                            copyButton.innerText = 'content_copy';
+                            copyButton.innerText = "content_copy";
                         }, 2000);
                     });
             });
@@ -1008,28 +1119,28 @@ class PendingContent {
     }
 
     updateDisplay() {
-        this.container.innerHTML = '';
+        this.container.innerHTML = "";
 
         if (this.images.length === 0) {
-            this.container.style.display = 'none';
+            this.container.style.display = "none";
             return;
         }
 
-        this.container.style.display = 'flex';
+        this.container.style.display = "flex";
 
         this.images.forEach((img, index) => {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'pending-image-container';
+            const imgContainer = document.createElement("div");
+            imgContainer.className = "pending-image-container";
 
-            const imgElement = document.createElement('img');
+            const imgElement = document.createElement("img");
             imgElement.src = img.src;
-            imgElement.alt = 'Pending image';
-            imgElement.className = 'pending-image';
+            imgElement.alt = "Pending image";
+            imgElement.className = "pending-image";
 
-            const removeButton = document.createElement('button');
-            removeButton.className = 'icon remove-image-button';
-            removeButton.innerText = 'close';
-            removeButton.addEventListener('click', () => {
+            const removeButton = document.createElement("button");
+            removeButton.className = "icon remove-image-button";
+            removeButton.innerText = "close";
+            removeButton.addEventListener("click", () => {
                 this.images.splice(index, 1);
                 this.updateDisplay();
             });
@@ -1044,7 +1155,7 @@ class PendingContent {
         if (this.images.length === 0) return;
 
         this.images.forEach((img) => {
-            message.addPart('image', img.src);
+            message.addPart("image", img.src);
         });
 
         this.clearImages();
@@ -1052,12 +1163,12 @@ class PendingContent {
 }
 
 function getSavedSettings() {
-    const font = localStorage.getItem('font') || 'sans-serif';
-    const theme = localStorage.getItem('theme') || 'light';
-    const systemPrompt = localStorage.getItem('systemPrompt');
-    const hue = localStorage.getItem('hue') || '230';
-    const saturation = localStorage.getItem('saturation') || '5';
-    const temperature = localStorage.getItem('temperature') || '1.0';
+    const font = localStorage.getItem("font") || "sans-serif";
+    const theme = localStorage.getItem("theme") || "light";
+    const systemPrompt = localStorage.getItem("systemPrompt");
+    const hue = localStorage.getItem("hue") || "230";
+    const saturation = localStorage.getItem("saturation") || "5";
+    const temperature = localStorage.getItem("temperature") || "1.0";
 
     dom.fontSelect.value = font;
     dom.themeSelect.value = theme;
@@ -1069,14 +1180,14 @@ function getSavedSettings() {
     dom.temperatureInput.value = temperature;
     dom.temperatureValue.innerText = temperature;
 
-    document.documentElement.classList.remove('mono', 'slab', 'serif', 'sans-serif');
+    document.documentElement.classList.remove("mono", "slab", "serif", "sans-serif");
     document.documentElement.classList.add(font);
 
-    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);
 
-    document.documentElement.style.setProperty('--hue', hue);
-    document.documentElement.style.setProperty('--saturation', `${saturation}%`);
+    document.documentElement.style.setProperty("--hue", hue);
+    document.documentElement.style.setProperty("--saturation", `${saturation}%`);
 
     if (systemPrompt) {
         dom.systemPromptInput.value = systemPrompt;
@@ -1091,37 +1202,38 @@ md.set({ breaks: true });
 Model.loadModels().then(() => {
     Model.buildPopup(dom.modelSelect);
     Model.setCurrentModel(Model.defaultModel);
+    Model.loadModelsFromStorage();
 });
 
-if (!localStorage.getItem('notWarnedApiKey')) {
-    dom.popup.classList.remove('hidden');
-    localStorage.setItem('notWarnedApiKey', '1');
+if (!localStorage.getItem("notWarnedApiKey")) {
+    dom.popup.classList.remove("hidden");
+    localStorage.setItem("notWarnedApiKey", "1");
 }
 
 getSavedSettings();
 
 // buttons
-dom.popupClose.addEventListener('click', () => {
-    dom.popup.classList.add('hidden');
+dom.popupClose.addEventListener("click", () => {
+    dom.popup.classList.add("hidden");
 });
 
-dom.newChatButton.addEventListener('click', (e) => {
+dom.newChatButton.addEventListener("click", (e) => {
     e.preventDefault();
-    dom.mainDiv.classList.remove('chat');
-    dom.messagesDiv.innerHTML = '';
-    dom.promptInput.value = '';
-    dom.promptInput.style.height = 'auto';
+    dom.mainDiv.classList.remove("chat");
+    dom.messagesDiv.innerHTML = "";
+    dom.promptInput.value = "";
+    dom.promptInput.style.height = "auto";
     conversation = new Conversation();
 });
 
-dom.addButton.addEventListener('click', () => {
+dom.addButton.addEventListener("click", () => {
     // upload image
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
     input.multiple = true;
 
-    input.addEventListener('change', (e) => {
+    input.addEventListener("change", (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
@@ -1142,77 +1254,90 @@ dom.addButton.addEventListener('click', () => {
 });
 
 // prompt event listeners
-dom.promptInput.addEventListener('input', () => {
-    dom.promptInput.style.height = 'auto';
+dom.promptInput.addEventListener("input", () => {
+    dom.promptInput.style.height = "auto";
     dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
 });
 
-dom.sendButton.addEventListener('click', () => {
+dom.sendButton.addEventListener("click", () => {
     conversation.send();
 });
 
-dom.promptInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+dom.promptInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         conversation.send();
     }
 });
 
 // settings
-dom.settingsButton.addEventListener('click', () => {
-    dom.settingsPopup.classList.toggle('hidden');
+dom.settingsButton.addEventListener("click", () => {
+    dom.settingsPopup.classList.toggle("hidden");
+});
+
+dom.settingsPopup.addEventListener("click", (e) => {
+    if (e.target === dom.settingsPopup) {
+        dom.settingsPopup.classList.add("hidden");
+    }
 });
 
 dom.keyButtons.forEach((button) => {
-    button.addEventListener('click', (e) => {
-        const keyContainer = e.target.closest('.api-key-container');
+    button.addEventListener("click", (e) => {
+        const keyContainer = e.target.closest(".api-key-container");
         if (keyContainer) {
-            keyContainer.classList.toggle('collapsed');
+            keyContainer.classList.toggle("collapsed");
         }
     });
 });
 
-dom.fontSelect.addEventListener('change', (e) => {
+dom.fontSelect.addEventListener("change", (e) => {
     const font = e.target.value;
-    document.documentElement.classList.remove('mono', 'slab', 'serif');
+    document.documentElement.classList.remove("mono", "slab", "serif");
     document.documentElement.classList.add(font);
 
-    localStorage.setItem('font', font);
+    localStorage.setItem("font", font);
 });
 
-dom.themeSelect.addEventListener('change', (e) => {
+dom.themeSelect.addEventListener("change", (e) => {
     let theme = e.target.value;
 
-    if (theme === 'system') {
-        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (theme === "system") {
+        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
 
-    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);
 
-    localStorage.setItem('theme', theme);
+    localStorage.setItem("theme", theme);
 });
 
-dom.systemPromptInput.addEventListener('blur', () => {
-    localStorage.setItem('systemPrompt', dom.systemPromptInput.value.trim());
+dom.systemPromptInput.addEventListener("blur", () => {
+    localStorage.setItem("systemPrompt", dom.systemPromptInput.value.trim());
 });
 
-dom.temperatureInput.addEventListener('input', (e) => {
+dom.temperatureInput.addEventListener("input", (e) => {
     const temperature = e.target.value;
     dom.temperatureValue.innerText = temperature;
-    localStorage.setItem('temperature', temperature);
+    localStorage.setItem("temperature", temperature);
 });
 
-dom.hue.addEventListener('input', (e) => {
+dom.hue.addEventListener("input", (e) => {
     const hue = e.target.value;
-    document.documentElement.style.setProperty('--hue', hue);
-    localStorage.setItem('hue', hue);
+    document.documentElement.style.setProperty("--hue", hue);
+    localStorage.setItem("hue", hue);
     dom.hueValue.innerText = hue;
 });
 
-dom.saturation.addEventListener('input', (e) => {
+dom.saturation.addEventListener("input", (e) => {
     const saturation = e.target.value;
-    document.documentElement.style.setProperty('--saturation', `${saturation}%`);
-    localStorage.setItem('saturation', saturation);
+    document.documentElement.style.setProperty("--saturation", `${saturation}%`);
+    localStorage.setItem("saturation", saturation);
     dom.saturationValue.innerText = saturation;
+});
+
+// model settings
+dom.modelSettingsPopup.addEventListener("click", (e) => {
+    if (e.target === dom.modelSettingsPopup) {
+        dom.modelSettingsPopup.classList.add("hidden");
+    }
 });

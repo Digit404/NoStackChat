@@ -188,7 +188,7 @@
         "id": "claude-opus-4-1-20250805",
         "provider": "Anthropic",
         "name": "Claude Opus 4.1",
-        "description": "Anthropics most powerful reasoning model.",
+        "description": "Anthropic's most powerful reasoning model.",
         "icon": "/res/Claude-4.png",
         "color": "#FFF",
         "type": "standard",

@@ -456,6 +456,7 @@ table {
     display: flex;
     flex-direction: column;
     padding: 20px;
+    padding-top: 20px;
     z-index: 10;
     outline: var(--contrast-outline);
     gap: 10px;
@@ -465,45 +466,105 @@ table {
     overflow-y: auto;
     user-select: none;
 
-    .model-list-section {
+    #model-settings {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2rem;
+        position: absolute;
+        top: 10px;
+        right: 25px;
+        cursor: pointer;
+        height: 50px;
+        width: 50px;
+        z-index: 20;
+        border-radius: var(--border-radius);
+        color: var(--text-color);
+        opacity: 0.5;
+
+        &:hover {
+            background-color: var(--fg-color-hover);
+            opacity: 1;
+        }
+    }
+}
+
+.model-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 40em;
+    max-height: 65dvh;
+    overflow-y: auto;
+    width: 500px;
+    max-width: 80dvw;
+}
+
+.model-list-section {
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+
+    h2 {
+        font-size: 1rem;
+        font-weight: bold;
+        opacity: 0.5;
+    }
+
+    .model-list {
         display: flex;
         flex-direction: column;
 
-        h2 {
-            font-size: 1rem;
-            font-weight: bold;
-            opacity: 0.5;
-        }
-
-        .model-list {
+        .model-item {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            align-items: center;
+            padding: 10px 20px;
+            gap: 10px;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            background-color: var(--fg-color);
+            color: var(--text-color);
+            width: 100%;
 
-            .model-item {
+            .model-list-container & {
+                cursor: auto;
+            }
+
+            .model-name {
+                font-size: 1.25rem;
+                font-weight: bold;
+            }
+
+            .model-hide-icon,
+            .model-info-icon {
                 display: flex;
-                flex-direction: row;
+                justify-content: center;
                 align-items: center;
-                padding: 10px 20px;
-                gap: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 1.5rem;
+                border-radius: 1337px;
+                opacity: 0.5;
+                margin-left: auto;
+                user-select: none;
                 cursor: pointer;
-                border-radius: var(--border-radius);
-                background-color: var(--fg-color);
-                color: var(--text-color);
-                width: 100%;
+                transition: opacity 0.2s ease;
 
-                .model-name {
-                    font-size: 1.25rem;
-                    font-weight: bold;
+                @media (hover: hover) {
+                    &:hover {
+                        opacity: 1;
+                    }
                 }
+            }
 
-                .model-info-icon {
-                    width: 20px;
-                    height: 20px;
-                    font-size: 1.25rem;
-                    border-radius: 1337px;
-                    background-color: var(--fg-color);
-                    opacity: 0.5;
-                    margin-left: auto;
+            &.invisible {
+                opacity: 0.3;
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    background-color: var(--fg-color-hover);
                 }
             }
         }
@@ -880,8 +941,7 @@ table {
     #new-chat-button:hover,
     .verify-button:hover,
     #settings-button:hover,
-    #model-select:hover,
-    .model-item:hover {
+    #model-select:hover {
         background-color: var(--fg-color-hover);
     }
 
