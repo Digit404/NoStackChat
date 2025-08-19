@@ -1280,7 +1280,6 @@ Model.loadModels().then(() => {
 
 if (!localStorage.getItem("notWarnedApiKey")) {
     dom.popup.classList.remove("hidden");
-    localStorage.setItem("notWarnedApiKey", "1");
 }
 
 getSavedSettings();
@@ -1288,6 +1287,7 @@ getSavedSettings();
 // buttons
 dom.popupClose.addEventListener("click", () => {
     dom.popup.classList.add("hidden");
+    localStorage.setItem("notWarnedApiKey", "1");
 });
 
 dom.newChatButton.addEventListener("click", (e) => {
