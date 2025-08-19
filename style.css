@@ -125,6 +125,11 @@ table {
     }
 }
 
+*::selection {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+
 .serif {
     --font: "Bitter", "Georgia", serif;
 }
@@ -218,6 +223,56 @@ table {
                 object-fit: cover;
                 position: relative;
             }
+        }
+    }
+
+    #prompt {
+        width: 100%;
+        padding: 10px;
+        border-radius: var(--border-radius);
+        background-color: var(--fg-color);
+        color: var(--text-color);
+        font-size: 1.25rem;
+        font-family: var(--font);
+        resize: none;
+        min-height: 50px;
+        height: auto;
+        max-height: 200px;
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+
+    .toolbar {
+        display: flex;
+        flex-direction: row-reverse;
+        gap: 10px;
+        justify-content: space-between;
+        align-items: center;
+
+        button {
+            height: 30px;
+            width: 30px;
+            font-size: 1.5rem;
+            border-radius: 1337px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background-color: var(--fg-color);
+            color: var(--text-color);
+
+            &:hover {
+                background-color: var(--fg-color-hover);
+            }
+        }
+
+        #send {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            width: 35px;
+            height: 35px;
         }
     }
 }
@@ -500,13 +555,13 @@ table {
     .chat & {
         display: flex;
     }
-}
 
-#messages {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: var(--chat-width);
+    #messages {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: var(--chat-width);
+    }
 }
 
 .message-container {
@@ -548,6 +603,20 @@ table {
                 padding: 15px 20px;
                 gap: 10px;
                 max-width: 90%;
+
+                .pending-bar {
+                    --loading-color: color-mix(in srgb, var(--text-color) 10%, transparent);
+                    --loading-color-2: color-mix(in srgb, var(--text-color) 5%, transparent);
+                    width: 100%;
+                    height: 1em;
+                    background: linear-gradient(90deg,
+                            var(--loading-color) 25%,
+                            var(--loading-color-2) 50%,
+                            var(--loading-color) 75%);
+                    background-size: 800px 100%;
+                    animation: shimmer 3s infinite linear;
+                    border-radius: 1337px;
+                }
             }
         }
 
@@ -604,6 +673,16 @@ table {
             opacity: 0.25;
         }
     }
+
+    &:hover .message-button {
+        color: var(--text-color);
+        opacity: 0.25;
+
+        &:hover {
+            color: var(--text-color);
+            opacity: 1;
+        }
+    }
 }
 
 .message-images {
@@ -638,97 +717,43 @@ table {
     max-height: auto;
     border-radius: var(--border-radius);
     overflow: hidden;
-}
-
-.code-buttons {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: flex;
-    flex-direction: row;
-    border-radius: 0 0 0 var(--border-radius);
-    overflow: hidden;
-}
-
-.code-buttons .button {
-    background-color: var(--text-color);
-    color: var(--bg-color);
-    width: 38px;
-    height: 38px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-    font-size: 1.5rem;
-    border-radius: 0;
-}
-
-.code-wrapper.collapsed {
-    max-height: 38px;
-    overflow: hidden;
 
     .code-buttons {
-        border-radius: 0;
-    }
-}
-
-.pending-bar {
-    --loading-color: color-mix(in srgb, var(--text-color) 10%, transparent);
-    --loading-color-2: color-mix(in srgb, var(--text-color) 5%, transparent);
-    width: 100%;
-    height: 1em;
-    background: linear-gradient(90deg,
-            var(--loading-color) 25%,
-            var(--loading-color-2) 50%,
-            var(--loading-color) 75%);
-    background-size: 800px 100%;
-    animation: shimmer 3s infinite linear;
-    border-radius: 1337px;
-}
-
-#prompt {
-    width: 100%;
-    padding: 10px;
-    border-radius: var(--border-radius);
-    background-color: var(--fg-color);
-    color: var(--text-color);
-    font-size: 1.25rem;
-    font-family: var(--font);
-    resize: none;
-    min-height: 50px;
-    height: auto;
-    max-height: 200px;
-
-    &:focus {
-        box-shadow: none;
-    }
-}
-
-.toolbar {
-    display: flex;
-    flex-direction: row-reverse;
-    gap: 10px;
-    justify-content: space-between;
-    align-items: center;
-
-    button {
-        height: 30px;
-        width: 30px;
-        font-size: 1.5rem;
-        border-radius: 1337px;
+        position: absolute;
+        top: 0;
+        right: 0;
         display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        background-color: var(--fg-color);
-        color: var(--text-color);
+        flex-direction: row;
+        border-radius: 0 0 0 var(--border-radius);
+        overflow: hidden;
+
+        .button {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            width: 38px;
+            height: 38px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            font-size: 1.5rem;
+            border-radius: 0;
+
+            @media (hover: hover) {
+                &:hover {
+                    background-color: var(--text-color-hover);
+                }
+            }
+        }
     }
 
-    #send {
-        background-color: var(--text-color);
-        color: var(--bg-color);
-        width: 35px;
-        height: 35px;
+    &.collapsed {
+        max-height: 38px;
+        overflow: hidden;
+
+        .code-buttons {
+            border-radius: 0;
+        }
     }
 }
 
@@ -823,11 +848,6 @@ table {
     user-select: none;
 }
 
-*::selection {
-    background-color: var(--text-color);
-    color: var(--bg-color);
-}
-
 @keyframes shimmer {
     0% {
         background-position: -400px 0;
@@ -849,45 +869,23 @@ table {
 }
 
 @media (hover:hover) {
-    .toolbar button:hover {
-        background-color: var(--fg-color-hover);
-    }
 
+    /* text color buttons */
     #send:hover {
         background-color: var(--text-color-hover);
-        color: var(--bg-color);
     }
 
+    /* fg color buttons */
     .key-button:hover,
     #new-chat-button:hover,
     .verify-button:hover,
-    #settings-button:hover {
-        background-color: var(--fg-color-hover);
-    }
-
-    .code-buttons .button:hover {
-        background-color: var(--text-color-hover);
-    }
-
-    .message-container:hover .message-button {
-        color: var(--text-color);
-        opacity: 0.25;
-    }
-
-    .message-container:hover .message-button:hover {
-        color: var(--text-color);
-        opacity: 1;
-    }
-
-    #model-select:hover {
-        background-color: var(--fg-color-hover);
-        color: var(--text-color);
-    }
-
+    #settings-button:hover,
+    #model-select:hover,
     .model-item:hover {
         background-color: var(--fg-color-hover);
     }
 
+    /* red buttons */
     .remove-image-button:hover {
         background-color: var(--red);
         color: var(--fg-color);
