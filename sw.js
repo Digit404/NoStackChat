@@ -52,11 +52,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
         caches.match(request).then((cachedResp) => {
             const networkFetch = fetch(request)
-                .then((resp) => {
-                    return caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(request, resp.clone());
-                        return resp;
-                    });
+                .then(async (resp) => {
+                    const cache = await caches.open(CACHE_NAME);
+                    cache.put(request, resp.clone());
+                    return resp;
                 })
                 .catch(() => cachedResp);
             return cachedResp || networkFetch;
