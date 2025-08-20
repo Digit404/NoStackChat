@@ -1,4 +1,57 @@
-@import url('https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,100..900;1,100..900&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Roboto+Slab:wght@100..900&display=swap');
+/* fonts */
+@font-face {
+    font-family: 'DM Sans 9pt';
+    src: url('res/fonts/DMSans-9ptRegular.woff2') format('woff2'),
+        url('res/fonts/DMSans-9ptRegular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Bitter';
+    src: url('res/fonts/Bitter-Thin.woff2') format('woff2'),
+        url('res/fonts/Bitter-Thin.woff') format('woff');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Bitter';
+    src: url('res/fonts/Bitter-ThinItalic.woff2') format('woff2'),
+        url('res/fonts/Bitter-ThinItalic.woff') format('woff');
+    font-weight: 100;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto Slab';
+    src: url('res/fonts/RobotoSlab-Regular.woff2') format('woff2'),
+        url('res/fonts/RobotoSlab-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Fira Code';
+    src: url('res/fonts/FiraCode-Light.woff2') format('woff2'),
+        url('res/fonts/FiraCode-Light.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DM Sans 9pt';
+    src: url('res/fonts/DMSans-9ptItalic.woff2') format('woff2'),
+        url('res/fonts/DMSans-9ptItalic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
 
 :root {
     --font: "DM Sans", sans-serif;
