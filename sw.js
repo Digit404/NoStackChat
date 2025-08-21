@@ -1,11 +1,13 @@
-const CACHE_NAME = "nostack-pwa-v1";
+const CACHE_NAME = "nostack-pwa-v2";
 const OFFLINE_ASSETS = [
     "/",
     "/nostack.js",
     "/style.css",
+    "/common.css",
     "/known_models.json",
     "/darkmode.js",
     "/manifest.json",
+    "/default-modern.css",
     "/res/Claude-3.5.png",
     "/res/Claude-3.7.png",
     "/res/Claude-4.png",
@@ -33,8 +35,6 @@ const OFFLINE_ASSETS = [
     "/res/fonts/FiraCode-Light.woff2",
     "/res/fonts/RobotoSlab-Regular.woff",
     "/res/fonts/RobotoSlab-Regular.woff2",
-    "https://www.rebitwise.com/tools/common.css",
-    "https://www.rebitwise.com/default-modern.css",
     "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js",
     "https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js",
     "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js",
@@ -42,35 +42,77 @@ const OFFLINE_ASSETS = [
 
 self.addEventListener("install", (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            for (const asset of OFFLINE_ASSETS) {
-                cache.add(asset).catch((err) => console.error(`Failed to cache ${asset}:`, err));
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            const results = await Promise.allSettled(OFFLINE_ASSETS.map((u) => cache.add(u)));
+            // Log any failures to pre-cache assets
+            console.log("Pre-caching completed:", results);
+            if (results.every((r) => r.status === "fulfilled")) {
+                console.log("All assets pre-cached successfully.");
             }
-        })
+            const fails = results.filter((r) => r.status === "rejected");
+            if (fails.length) console.warn("Precaching failures:", fails);
+        })()
     );
     self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-    event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))));
-    self.clients.claim();
+    event.waitUntil(
+        (async () => {
+            const keys = await caches.keys();
+            await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+            await self.clients.claim();
+        })()
+    );
 });
+
+function isPrecached(req) {
+    const url = new URL(req.url);
+    return OFFLINE_ASSETS.includes(req.url) || (url.origin === self.location.origin && OFFLINE_ASSETS.includes(url.pathname));
+}
 
 self.addEventListener("fetch", (event) => {
     const { request } = event;
+    if (request.method !== "GET") return;
 
-    if (!OFFLINE_ASSETS.includes(request.url) && !OFFLINE_ASSETS.includes(new URL(request.url).pathname)) return;
-
-    event.respondWith(
-        caches.match(request).then((cachedResp) => {
-            const networkFetch = fetch(request)
-                .then(async (resp) => {
+    // 1) Handle navigations: network-first, fallback to cached shell ("/")
+    if (request.mode === "navigate") {
+        event.respondWith(
+            (async () => {
+                try {
+                    const resp = await fetch(request);
                     const cache = await caches.open(CACHE_NAME);
-                    cache.put(request, resp.clone());
+                    try {
+                        cache.put("/", resp.clone());
+                    } catch (_) {}
                     return resp;
-                })
-                .catch(() => cachedResp);
-            return cachedResp || networkFetch;
-        })
-    );
+                } catch (_) {
+                    const cache = await caches.open(CACHE_NAME);
+                    return (await cache.match(request)) || (await cache.match("/")) || new Response("Offline", { status: 503 });
+                }
+            })()
+        );
+        return;
+    }
+
+    // 2) For precached assets: stale-while-revalidate
+    if (isPrecached(request)) {
+        event.respondWith(
+            (async () => {
+                const cache = await caches.open(CACHE_NAME);
+                const cached = await cache.match(request, { ignoreSearch: true });
+                const network = fetch(request)
+                    .then(async (resp) => {
+                        try {
+                            await cache.put(request, resp.clone());
+                        } catch (_) {}
+                        return resp;
+                    })
+                    .catch(() => undefined);
+                return cached || (await network) || new Response("Offline", { status: 503 });
+            })()
+        );
+        return;
+    }
 });

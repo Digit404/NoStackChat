@@ -54,7 +54,6 @@
 }
 
 :root {
-    --font: "DM Sans", sans-serif;
     --message-width: 900px;
     --chat-width: 1000px;
     --contrast-outline: 5px solid var(--bg-color);

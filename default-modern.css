@@ -1,0 +1,121 @@
+/* 
+Theme: Default Modern
+Description: Theme used by VS Code for highlight.js
+Author: Digit
+*/
+
+/* Default (light) theme variables */
+:root,
+.light,
+.dark .dark {
+    --hljs-text: #000000;
+    --hljs-keyword: #AF00DB;
+    --hljs-title: #795E26;
+    --hljs-string: #A31515;
+    --hljs-tag: #000080;
+    --hljs-class: #267F99;
+    --hljs-number: #098658;
+    --hljs-variable: #001080;
+    --hljs-comment: #008000;
+    --hljs-addition: #098658;
+    --hljs-addition-bg: #EFFFF0;
+    --hljs-deletion: #A31515;
+    --hljs-deletion-bg: #FFF0F0;
+}
+
+/* Dark theme variables */
+.dark {
+    --hljs-text: #CCCCCC;
+    --hljs-keyword: #C586C0;
+    --hljs-title: #DCDCAA;
+    --hljs-string: #CE9178;
+    --hljs-tag: #569CD6;
+    --hljs-class: #4EC9B0;
+    --hljs-number: #B5CEA8;
+    --hljs-variable: #9CDCFE;
+    --hljs-comment: #6A9955;
+    --hljs-addition: #B5CEA8;
+    --hljs-addition-bg: #033a16;
+    --hljs-deletion: #CE9178;
+    --hljs-deletion-bg: #67060c;
+}
+
+pre code.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 1em;
+}
+
+code.hljs {
+    padding: 3px 5px;
+}
+
+.hljs {
+    color: var(--hljs-text);
+}
+
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-type {
+    color: var(--hljs-keyword);
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-name,
+.hljs-attribute {
+    color: var(--hljs-title);
+}
+
+.hljs-string,
+.hljs-meta-string {
+    color: var(--hljs-string);
+}
+
+.hljs-deletion,
+.hljs-tag {
+    color: var(--hljs-tag);
+}
+
+.hljs-title.class_,
+.hljs-type {
+    color: var(--hljs-class);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+    color: var(--hljs-number);
+}
+
+.hljs-variable,
+.hljs-template-variable {
+    color: var(--hljs-variable);
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-doctag {
+    color: var(--hljs-comment);
+}
+
+.hljs-meta,
+.hljs-emphasis {
+    font-style: italic;
+}
+
+.hljs-strong {
+    font-weight: bold;
+}
+
+.hljs-addition {
+    color: var(--hljs-addition);
+    background-color: var(--hljs-addition-bg);
+}
+
+.hljs-deletion {
+    color: var(--hljs-deletion);
+    background-color: var(--hljs-deletion-bg);
+}

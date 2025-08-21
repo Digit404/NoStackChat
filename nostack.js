@@ -644,8 +644,6 @@ class Conversation {
         // add user message to DOM
         userMessage.addToDOM();
 
-        Conversation.scrollDown();
-
         this.createResponse();
     }
 
@@ -669,6 +667,14 @@ class Conversation {
     }
 
     async streamResponse() {
+        const shouldAutoScroll = () => {
+            const scrollPosition = window.scrollY + window.innerHeight;
+            const scrollHeight = document.body.scrollHeight;
+            const scrollThreshold = 80; // px from bottom
+            console.log("Scroll position:", scrollHeight - scrollPosition);
+            return scrollHeight - scrollPosition <= scrollThreshold;
+        };
+
         const messages = this.toAPIFormat();
         const model = Model.getCurrentModel();
 
@@ -677,6 +683,10 @@ class Conversation {
         const part = BotMessage.addPart("text", ""); // start with empty text part
         part.view.setPending(); // set pending state for the part
         BotMessage.addToDOM();
+
+        if (shouldAutoScroll()) {
+            Conversation.scrollDown();
+        }
 
         this.abortController = new AbortController();
 
@@ -695,13 +705,6 @@ class Conversation {
         const decoder = new TextDecoder("utf-8");
 
         let buffer = "";
-
-        const shouldAutoScroll = () => {
-            const scrollPosition = window.scrollY + window.innerHeight;
-            const scrollHeight = document.body.scrollHeight;
-            const scrollThreshold = 100; // px from bottom
-            return scrollHeight - scrollPosition <= scrollThreshold;
-        };
 
         while (true) {
             let { value, done } = await reader.read();
@@ -729,10 +732,7 @@ class Conversation {
 
                     // auto-scroll only if user is already near the bottom
                     if (shouldAutoScroll()) {
-                        window.scrollTo({
-                            top: document.body.scrollHeight,
-                            behavior: "smooth",
-                        });
+                        Conversation.scrollDown();
                     }
                 }
             }
@@ -742,7 +742,6 @@ class Conversation {
     static scrollDown() {
         window.scrollTo({
             top: document.body.scrollHeight,
-            behavior: "smooth",
         });
     }
 
