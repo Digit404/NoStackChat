@@ -524,8 +524,9 @@ class Conversation {
         this.messages = [];
         this.generating = false;
         this.abortController = null;
-        this.pendingContent = new PendingContent();
         this.idCounter = 0;
+
+        this.pendingImages = [];
     }
 
     getLastMessage() {
@@ -609,7 +610,7 @@ class Conversation {
         }
 
         const prompt = dom.promptInput.value.trim();
-        const hasPendingImages = this.pendingContent.images.length > 0;
+        const hasPendingImages = this.pendingImages.length > 0;
 
         if (!prompt && !hasPendingImages) {
             return;
@@ -634,7 +635,7 @@ class Conversation {
 
         if (hasPendingImages) {
             // apply pending images to the user message
-            this.pendingContent.applyToMessage(userMessage);
+            this.applyPendingContentToMessage(userMessage);
         }
 
         // clear input
@@ -645,6 +646,59 @@ class Conversation {
         userMessage.addToDOM();
 
         this.createResponse();
+    }
+
+    addPendingImage(imgURL) {
+        this.pendingImages.push(imgURL);
+        this.updatePendingDisplay();
+    }
+
+    clearPendingImages() {
+        this.pendingImages = [];
+        this.updatePendingDisplay();
+    }
+
+    updatePendingDisplay() {
+        dom.pendingImagesContainer.innerHTML = ""; // clear existing images
+
+        if (this.pendingImages.length === 0) {
+            dom.pendingImagesContainer.classList.add("hidden");
+            return;
+        }
+
+        dom.pendingImagesContainer.classList.remove("hidden");
+
+        for (const img of this.pendingImages) {
+            const imgContainer = document.createElement("div");
+            imgContainer.className = "pending-image-container";
+
+            const imgElement = document.createElement("img");
+            imgElement.src = img;
+            imgElement.alt = "Pending image";
+            imgElement.className = "pending-image";
+
+            const removeButton = document.createElement("button");
+            removeButton.className = "icon remove-image-button";
+            removeButton.innerText = "close";
+            removeButton.addEventListener("click", (e) => {
+                this.pendingImages.splice(this.pendingImages.indexOf(img), 1);
+                this.updatePendingDisplay();
+            });
+
+            imgContainer.appendChild(imgElement);
+            imgContainer.appendChild(removeButton);
+            dom.pendingImagesContainer.appendChild(imgContainer);
+        }
+    }
+
+    applyPendingContentToMessage(message) {
+        if (this.pendingImages.length === 0) return;
+
+        for (const imgURL of this.pendingImages) {
+            const part = message.addPart("image", imgURL);
+        }
+
+        this.clearPendingImages();
     }
 
     async createResponse() {
@@ -1159,66 +1213,6 @@ class PartView {
     }
 }
 
-class PendingContent {
-    constructor() {
-        this.images = [];
-        this.container = dom.pendingImagesContainer;
-    }
-
-    addImage(imageData) {
-        this.images.push(imageData);
-        this.updateDisplay();
-    }
-
-    clearImages() {
-        this.images = [];
-        this.updateDisplay();
-    }
-
-    updateDisplay() {
-        this.container.innerHTML = "";
-
-        if (this.images.length === 0) {
-            this.container.style.display = "none";
-            return;
-        }
-
-        this.container.style.display = "flex";
-
-        this.images.forEach((img, index) => {
-            const imgContainer = document.createElement("div");
-            imgContainer.className = "pending-image-container";
-
-            const imgElement = document.createElement("img");
-            imgElement.src = img.src;
-            imgElement.alt = "Pending image";
-            imgElement.className = "pending-image";
-
-            const removeButton = document.createElement("button");
-            removeButton.className = "icon remove-image-button";
-            removeButton.innerText = "close";
-            removeButton.addEventListener("click", () => {
-                this.images.splice(index, 1);
-                this.updateDisplay();
-            });
-
-            imgContainer.appendChild(imgElement);
-            imgContainer.appendChild(removeButton);
-            this.container.appendChild(imgContainer);
-        });
-    }
-
-    applyToMessage(message) {
-        if (this.images.length === 0) return;
-
-        this.images.forEach((img) => {
-            message.addPart("image", img.src);
-        });
-
-        this.clearImages();
-    }
-}
-
 function getSavedSettings() {
     const font = localStorage.getItem("font") || "sans-serif";
     const theme = localStorage.getItem("theme") || "light";
@@ -1312,7 +1306,7 @@ dom.addButton.addEventListener("click", () => {
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    conversation.pendingContent.addImage(img);
+                    conversation.addPendingImage(event.target.result);
                 };
             };
             reader.readAsDataURL(file);
