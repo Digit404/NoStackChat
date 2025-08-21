@@ -381,7 +381,7 @@ class Model {
 
     static async loadModels() {
         try {
-            const response = await fetch("/known_models.json");
+            const response = await fetch("/api/known_models.json");
             const modelsData = await response.json();
             Model.models = modelsData.map((data) => new Model(data));
         } catch (error) {
@@ -671,7 +671,6 @@ class Conversation {
             const scrollPosition = window.scrollY + window.innerHeight;
             const scrollHeight = document.body.scrollHeight;
             const scrollThreshold = 80; // px from bottom
-            console.log("Scroll position:", scrollHeight - scrollPosition);
             return scrollHeight - scrollPosition <= scrollThreshold;
         };
 
@@ -684,9 +683,7 @@ class Conversation {
         part.view.setPending(); // set pending state for the part
         BotMessage.addToDOM();
 
-        if (shouldAutoScroll()) {
-            Conversation.scrollDown();
-        }
+        Conversation.scrollDown();
 
         this.abortController = new AbortController();
 

@@ -4,10 +4,10 @@ const OFFLINE_ASSETS = [
     "/nostack.js",
     "/style.css",
     "/common.css",
-    "/known_models.json",
     "/darkmode.js",
     "/manifest.json",
     "/default-modern.css",
+    "/api/known_models.json",
     "/res/Claude-3.5.png",
     "/res/Claude-3.7.png",
     "/res/Claude-4.png",
@@ -35,9 +35,10 @@ const OFFLINE_ASSETS = [
     "/res/fonts/FiraCode-Light.woff2",
     "/res/fonts/RobotoSlab-Regular.woff",
     "/res/fonts/RobotoSlab-Regular.woff2",
-    "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js",
-    "https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js",
+    "/libs/markdown-it.min.js",
+    "/libs/purify.min.js",
+    "/libs/highlight.min.js",
+    "/libs/powershell.min.js",
 ];
 
 self.addEventListener("install", (event) => {
