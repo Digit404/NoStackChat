@@ -1005,6 +1005,9 @@ class PartView {
         });
         el.timestamp.title = new Date(this.part.message.timestamp).toLocaleString();
         el.messageContainer.appendChild(el.timestamp);
+        if (this.part.message.role === "assistant" && this.part.model) {
+            el.timestamp.innerText += ` • ${this.part.model.name}`;
+        }
 
         // create message part
         if (this.part.type === "text") {
@@ -1014,8 +1017,6 @@ class PartView {
 
             if (this.part.message.role === "user") {
                 el.messageDiv.classList.add("dark");
-            } else if (this.part.message.role === "assistant") {
-                el.messageDiv.title = `Model: ${this.part.model.name}`;
             }
 
             el.buttonContainer = document.createElement("div");
