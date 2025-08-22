@@ -912,9 +912,38 @@ class MessagePart {
         if (this.type === "text") {
             return { type: "text", text: this.content };
         } else if (this.type === "image") {
-            return { type: "image_url", image_url: { url: this.content } };
+            const currentModel = Model.getCurrentModel();
+            if (currentModel.provider === "OpenAI") {
+                return { type: "image_url", image_url: { url: this.content } };
+            } else if (currentModel.provider === "Anthropic") {
+                const imageParts = this.getImageParts();
+                if (imageParts) {
+                    return {
+                        type: "image",
+                        source: {
+                            type: "base64",
+                            media_type: imageParts.media_type,
+                            data: imageParts.data,
+                        },
+                    };
+                }
+            }
         }
         return null;
+    }
+
+    getImageParts() {
+        if (this.type === "image") {
+            const [header, base64] = this.content.split(",");
+            const mimeMatch = header.match(/data:(image\/[a-zA-Z]+);base64/);
+            if (mimeMatch) {
+                return {
+                    media_type: mimeMatch[1],
+                    data: base64,
+                };
+            }
+        }
+        return [];
     }
 
     destroy() {
