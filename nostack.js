@@ -1337,6 +1337,7 @@ dom.newChatButton.addEventListener("click", (e) => {
     dom.messagesDiv.innerHTML = "";
     dom.promptInput.value = "";
     dom.promptInput.style.height = "auto";
+    dom.promptInput.focus();
     conversation = new Conversation();
 });
 
