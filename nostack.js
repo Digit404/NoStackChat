@@ -820,7 +820,13 @@ class Message {
     }
 
     addPart(type, content) {
-        const part = new MessagePart(this, type, content);
+        let part;
+        if (type === "image") {
+            part = new ImagePart(this, content);
+        } else {
+            part = new TextPart(this, content);
+        }
+        
         this.parts.push(part);
         part.view.updateContent();
         return part;
@@ -909,41 +915,7 @@ class MessagePart {
     }
 
     toAPIFormat() {
-        if (this.type === "text") {
-            return { type: "text", text: this.content };
-        } else if (this.type === "image") {
-            const currentModel = Model.getCurrentModel();
-            if (currentModel.provider === "OpenAI") {
-                return { type: "image_url", image_url: { url: this.content } };
-            } else if (currentModel.provider === "Anthropic") {
-                const imageParts = this.getImageParts();
-                if (imageParts) {
-                    return {
-                        type: "image",
-                        source: {
-                            type: "base64",
-                            media_type: imageParts.media_type,
-                            data: imageParts.data,
-                        },
-                    };
-                }
-            }
-        }
         return null;
-    }
-
-    getImageParts() {
-        if (this.type === "image") {
-            const [header, base64] = this.content.split(",");
-            const mimeMatch = header.match(/data:(image\/[a-zA-Z]+);base64/);
-            if (mimeMatch) {
-                return {
-                    media_type: mimeMatch[1],
-                    data: base64,
-                };
-            }
-        }
-        return [];
     }
 
     destroy() {
@@ -951,6 +923,54 @@ class MessagePart {
             this.view.destroy();
             this.view = null;
         }
+    }
+}
+
+class TextPart extends MessagePart {
+    constructor(message, content) {
+        super(message, "text", content);
+    }
+
+    toAPIFormat() {
+        return { type: "text", text: this.content };
+    }
+}
+
+class ImagePart extends MessagePart {
+    constructor(message, content) {
+        super(message, "image", content);
+    }
+
+    toAPIFormat() {
+        const currentModel = Model.getCurrentModel();
+        if (currentModel.provider === "OpenAI") {
+            return { type: "image_url", image_url: { url: this.content } };
+        } else if (currentModel.provider === "Anthropic") {
+            const imageParts = this.getImageParts();
+            if (imageParts) {
+                return {
+                    type: "image",
+                    source: {
+                        type: "base64",
+                        media_type: imageParts.media_type,
+                        data: imageParts.data,
+                    },
+                };
+            }
+        }
+        return null;
+    }
+
+    getImageParts() {
+        const [header, base64] = (this.content || "").split(",");
+        const mimeMatch = header && header.match(/data:(image\/[a-zA-Z]+);base64/);
+        if (mimeMatch) {
+            return {
+                media_type: mimeMatch[1],
+                data: base64,
+            };
+        }
+        return null;
     }
 }
 
@@ -1045,7 +1065,7 @@ class PartView {
             el.removeButton.innerText = "close";
 
             el.removeButton.addEventListener("click", () => {
-                this.part.destroy();
+                this.part.message.removePart(this.part);
             });
 
             el.messageContainer.appendChild(el.messageDiv);
