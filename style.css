@@ -121,6 +121,7 @@ h4,
 h5,
 h6 {
     font-weight: bold;
+    user-select: auto;
 }
 
 h1 {
@@ -246,7 +247,13 @@ table {
     border-radius: 30px;
     max-width: 750px;
     width: 95%;
+    /* box shadow to hide whatever is below the prompt */
     box-shadow: 0 50px 0 var(--bg-color);
+    transition:
+        outline 0.2s ease,
+        outline-offset 0.2s ease,
+        background-color 0.2s ease,
+        color 0.2s ease;
 
     .chat & {
         position: fixed;
@@ -327,6 +334,33 @@ table {
             height: 35px;
         }
     }
+
+    &.dragover {
+        outline: 3px solid var(--blue);
+        outline-offset: 2px;
+
+        &::after {
+            opacity: 0.5;
+        }
+    }
+
+    &::after {
+        content: "add_circle";
+        font-family: var(--font-icons);
+        font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24;
+        font-size: 5rem;
+        position: absolute;
+        pointer-events: none;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
 }
 
 .remove-image-button {
@@ -350,6 +384,7 @@ table {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    user-select: none;
 
     .chat & {
         display: none;
@@ -364,7 +399,6 @@ table {
         color: var(--dim-text-color);
         font-size: 1rem;
         font-family: var(--font);
-        user-select: none;
     }
 }
 

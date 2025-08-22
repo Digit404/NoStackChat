@@ -5,6 +5,7 @@ const dom = {
 
     pendingImagesContainer: document.getElementById("pending-images-container"),
     promptInput: document.getElementById("prompt"),
+    controlsContainer: document.querySelector(".controls-container"),
     sendButton: document.getElementById("send"),
     addButton: document.getElementById("add"),
 
@@ -826,7 +827,7 @@ class Message {
         } else {
             part = new TextPart(this, content);
         }
-        
+
         this.parts.push(part);
         part.view.updateContent();
         return part;
@@ -1370,6 +1371,61 @@ dom.addButton.addEventListener("click", () => {
 dom.promptInput.addEventListener("input", () => {
     dom.promptInput.style.height = "auto";
     dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
+});
+
+dom.promptInput.addEventListener("paste", (e) => {
+    const items = e.clipboardData.items;
+    if (!items) return;
+
+    for (const item of items) {
+        if (item.type.indexOf("image") !== -1) {
+            const file = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    conversation.addPendingImage(event.target.result);
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+});
+
+dom.controlsContainer.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dom.controlsContainer.classList.add("dragover");
+});
+
+dom.controlsContainer.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dom.controlsContainer.classList.remove("dragover");
+});
+
+dom.controlsContainer.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dom.controlsContainer.classList.remove("dragover");
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+        if (file.type.indexOf("image") === -1) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                conversation.addPendingImage(event.target.result);
+            };
+        };
+        reader.readAsDataURL(file);
+    });
 });
 
 dom.sendButton.addEventListener("click", () => {
