@@ -822,26 +822,67 @@ table {
         }
     }
 
-    .message-button {
-        background-color: transparent;
-        color: var(--text-color);
-        font-size: 1.5rem;
-        width: 32px;
-        height: 32px;
-        border-radius: 1337px;
-        cursor: pointer;
-        color: var(--text-color);
-        opacity: 0;
-        transition: opacity 0.2s ease;
+    .message-button-container {
+        z-index: 11;
+        position: relative;
 
-        .editing & {
-            opacity: 0.25;
+        .message-button {
+            background-color: transparent;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 1337px;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+
+            .editing & {
+                opacity: 0.25;
+            }
+
+            @media (max-width: 600px) {
+                width: 30px;
+                height: 30px;
+                font-size: 1.25rem;
+            }
+        }
+    }
+
+    .timestamp {
+        position: relative;
+        font-size: 0.8rem;
+        color: var(--half-color);
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        margin-top: -24px;
+        margin-bottom: 5px;
+        margin-left: 10px;
+        margin-right: 10px;
+        opacity: 0;
+        z-index: 10;
+        width: max-content;
+        padding: 2px 5px;
+        transition: opacity 0.2s ease;
+        user-select: none;
+        display: flex;
+        align-items: center;
+
+        .model-icon-small {
+            width: 20px;
+            height: 20px;
+            border-radius: 1337px;
+            vertical-align: middle;
+            margin-right: 5px;
         }
 
-        @media (max-width: 600px) {
-            width: 30px;
-            height: 30px;
-            font-size: 1.25rem;
+        @media (hover: hover) {
+
+            .message-container:hover &,
+            .message-images:hover & {
+                opacity: 1;
+            }
         }
     }
 
@@ -851,31 +892,6 @@ table {
 
         &:hover {
             color: var(--text-color);
-            opacity: 1;
-        }
-    }
-}
-
-.timestamp {
-    font-size: 0.8rem;
-    color: var(--half-color);
-    background-color: var(--bg-color);
-    border-radius: var(--border-radius);
-    margin-top: -1.3rem;
-    margin-bottom: 5px;
-    margin-left: 10px;
-    margin-right: 10px;
-    opacity: 0;
-    z-index: 10;
-    width: max-content;
-    padding: 2px 5px;
-    transition: opacity 0.2s ease;
-    user-select: none;
-
-    @media (hover: hover) {
-
-        .message-container:hover &,
-        .message-images:hover & {
             opacity: 1;
         }
     }

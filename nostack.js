@@ -456,7 +456,7 @@ class Model {
 
         dom.modelSelect.addEventListener("click", (e) => {
             e.stopPropagation();
-            
+
             if (Model.noKey) {
                 dom.modelPopup.classList.add("hidden");
                 dom.settingsPopup.classList.remove("hidden");
@@ -1066,15 +1066,18 @@ class PartView {
 
         el.timestamp = document.createElement("span");
         el.timestamp.classList.add("timestamp");
-        el.timestamp.innerText = new Date(this.part.message.timestamp).toLocaleTimeString([], {
+        let timestampString = "";
+        if (this.part.message.role === "assistant" && this.part.model) {
+            timestampString += "<img src='" + this.part.model.icon + "' class='model-icon-small' alt='" + this.part.model.name + "' /> ";
+            timestampString += `${this.part.model.name} • `;
+        }
+        timestampString += new Date(this.part.message.timestamp).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
         });
+        el.timestamp.innerHTML = timestampString;
         el.timestamp.title = new Date(this.part.message.timestamp).toLocaleString();
         el.messageContainer.appendChild(el.timestamp);
-        if (this.part.message.role === "assistant" && this.part.model) {
-            el.timestamp.innerText += ` • ${this.part.model.name}`;
-        }
 
         // create message part
         if (this.part.type === "text") {
