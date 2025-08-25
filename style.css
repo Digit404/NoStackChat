@@ -861,9 +861,10 @@ table {
 
     .message-button-container {
         position: relative;
+        width: fit-content;
 
         /* all button containers will appear over timestamps */
-        z-index: 1;
+        z-index: 2;
 
         .message-button {
             background-color: transparent;
@@ -919,7 +920,7 @@ table {
     align-items: center;
 
     /* timestamps appear behind button containers */
-    z-index: -1;
+    z-index: 1;
 
     .model-icon-small {
         width: 20px;
