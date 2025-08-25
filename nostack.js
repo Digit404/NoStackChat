@@ -26,6 +26,10 @@ const dom = {
     settingsPopup: document.getElementById("settings-popup"),
     settingsButton: document.getElementById("settings-button"),
 
+    imagePreviewPopup: document.getElementById("image-preview-popup"),
+    imagePreviewContent: document.getElementById("image-preview-content"),
+    imagePreview: document.getElementById("image-preview"),
+
     keyButtons: document.querySelectorAll(".key-button"),
 
     openaiApiKeyInput: document.getElementById("openai-api-key"),
@@ -66,7 +70,7 @@ class Model {
         this.type = data.type || "standard";
         this.capabilities = data.capabilities || [];
         this.flags = data.flags || [];
-        this._hidden = false;
+        this._hidden = data.hidden || false;
 
         this.isDefaultModel = Model.defaultModel === this.id;
 
@@ -1118,6 +1122,11 @@ class PartView {
                 this.part.message.removePart(this.part);
             });
 
+            el.messageDiv.addEventListener("click", () => {
+                dom.imagePreview.src = this.part.content;
+                dom.imagePreviewPopup.classList.remove("hidden");
+            });
+
             el.messageContainer.appendChild(el.messageDiv);
             el.messageContainer.appendChild(el.removeButton);
         }
@@ -1379,6 +1388,11 @@ getSavedSettings();
 dom.popupClose.addEventListener("click", () => {
     dom.popup.classList.add("hidden");
     localStorage.setItem("notWarnedApiKey", "1");
+});
+
+dom.imagePreviewPopup.addEventListener("click", (e) => {
+    dom.imagePreviewPopup.classList.add("hidden");
+    dom.imagePreview.src = "";
 });
 
 dom.newChatButton.addEventListener("click", (e) => {

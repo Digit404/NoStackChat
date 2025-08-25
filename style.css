@@ -235,6 +235,7 @@ table {
 .controls-container {
     display: flex;
     flex-direction: column;
+    position: relative;
     background-color: var(--fg-color);
     outline: var(--contrast-outline);
     padding: 10px;
@@ -326,6 +327,12 @@ table {
             color: var(--bg-color);
             width: 35px;
             height: 35px;
+
+            @media (hover: hover) {
+                :hover {
+                    background-color: var(--text-color-hover);
+                }
+            }
         }
     }
 
@@ -375,6 +382,14 @@ table {
     align-items: center;
     cursor: pointer;
     opacity: 0.75;
+
+    @media (hover: hover) {
+        &:hover {
+            background-color: var(--red);
+            color: var(--fg-color);
+            opacity: 1;
+        }
+    }
 }
 
 #title-block {
@@ -414,6 +429,20 @@ table {
     }
 }
 
+.image-preview-content {
+    max-width: 90dvw;
+    max-height: 80dvh;
+    display: flex;
+    align-items: center;
+    position: relative;
+
+    .image-preview {
+        max-width: 100%;
+        max-height: 80dvh;
+        border-radius: var(--border-radius);
+    }
+}
+
 #settings-button {
     position: fixed;
     top: 20px;
@@ -437,6 +466,7 @@ table {
     max-width: 95%;
     gap: 5px;
     overflow-y: auto;
+    z-index: 10;
 
     .settings-section {
         display: flex;
@@ -725,6 +755,9 @@ table {
         flex-direction: column;
         width: 100%;
         max-width: var(--chat-width);
+
+        /* this is to initialize the stacking context for messages */
+        z-index: 0;
     }
 }
 
@@ -827,8 +860,10 @@ table {
     }
 
     .message-button-container {
-        z-index: 11;
         position: relative;
+
+        /* all button containers will appear over timestamps */
+        z-index: 1;
 
         .message-button {
             background-color: transparent;
@@ -876,13 +911,15 @@ table {
     margin-left: 10px;
     margin-right: 10px;
     opacity: 0;
-    z-index: 10;
     width: max-content;
     padding: 2px 5px;
     transition: opacity 0.2s ease;
     user-select: none;
     display: flex;
     align-items: center;
+
+    /* timestamps appear behind button containers */
+    z-index: -1;
 
     .model-icon-small {
         width: 20px;
@@ -1091,12 +1128,7 @@ table {
     }
 }
 
-@media (hover:hover) {
-
-    /* text color buttons */
-    #send:hover {
-        background-color: var(--text-color-hover);
-    }
+@media (hover: hover) {
 
     /* fg color buttons */
     .key-button:hover,
@@ -1105,13 +1137,6 @@ table {
     #settings-button:hover,
     #model-select:hover {
         background-color: var(--fg-color-hover);
-    }
-
-    /* red buttons */
-    .remove-image-button:hover {
-        background-color: var(--red);
-        color: var(--fg-color);
-        opacity: 1;
     }
 }
 
