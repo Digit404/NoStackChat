@@ -1455,19 +1455,19 @@ dom.promptInput.addEventListener("paste", (e) => {
     }
 });
 
-dom.controlsContainer.addEventListener("dragover", (e) => {
+document.body.addEventListener("dragover", (e) => {
     e.preventDefault();
     e.stopPropagation();
     dom.controlsContainer.classList.add("dragover");
 });
 
-dom.controlsContainer.addEventListener("dragleave", (e) => {
+document.body.addEventListener("dragleave", (e) => {
     e.preventDefault();
     e.stopPropagation();
     dom.controlsContainer.classList.remove("dragover");
 });
 
-dom.controlsContainer.addEventListener("drop", (e) => {
+document.body.addEventListener("drop", (e) => {
     e.preventDefault();
     e.stopPropagation();
     dom.controlsContainer.classList.remove("dragover");

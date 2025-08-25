@@ -348,10 +348,14 @@ table {
             'opsz' 24;
         font-size: 5rem;
         position: absolute;
+        display: flex;
+        top: 0;
+        left: 0;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
         pointer-events: none;
-        top: 50%;
-        left: 50%;
-        transform: translateX(-50%);
         opacity: 0;
         transition: opacity 0.2s ease;
     }
@@ -850,48 +854,48 @@ table {
         }
     }
 
-    .timestamp {
-        position: relative;
-        font-size: 0.8rem;
-        color: var(--half-color);
-        background-color: var(--bg-color);
-        border-radius: var(--border-radius);
-        margin-top: -24px;
-        margin-bottom: 5px;
-        margin-left: 10px;
-        margin-right: 10px;
-        opacity: 0;
-        z-index: 10;
-        width: max-content;
-        padding: 2px 5px;
-        transition: opacity 0.2s ease;
-        user-select: none;
-        display: flex;
-        align-items: center;
-
-        .model-icon-small {
-            width: 20px;
-            height: 20px;
-            border-radius: 1337px;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
-
-        @media (hover: hover) {
-
-            .message-container:hover &,
-            .message-images:hover & {
-                opacity: 1;
-            }
-        }
-    }
-
     &:hover .message-button {
         color: var(--text-color);
         opacity: 0.25;
 
         &:hover {
             color: var(--text-color);
+            opacity: 1;
+        }
+    }
+}
+
+.timestamp {
+    position: relative;
+    font-size: 0.8rem;
+    color: var(--half-color);
+    background-color: var(--bg-color);
+    border-radius: var(--border-radius);
+    margin-top: -24px;
+    margin-bottom: 5px;
+    margin-left: 10px;
+    margin-right: 10px;
+    opacity: 0;
+    z-index: 10;
+    width: max-content;
+    padding: 2px 5px;
+    transition: opacity 0.2s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+
+    .model-icon-small {
+        width: 20px;
+        height: 20px;
+        border-radius: 1337px;
+        vertical-align: middle;
+        margin-right: 5px;
+    }
+
+    @media (hover: hover) {
+
+        .message-container:hover &,
+        .message-images:hover & {
             opacity: 1;
         }
     }
