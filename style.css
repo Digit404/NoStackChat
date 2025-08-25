@@ -669,6 +669,11 @@ table {
             }
         }
     }
+
+    &.disabled {
+        opacity: 0.25;
+        pointer-events: none;
+    }
 }
 
 .model-icon {

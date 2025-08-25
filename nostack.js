@@ -52,6 +52,7 @@ class Model {
     static models = [];
     static currentModel = null;
     static defaultModel = "gpt-4.1";
+    static noKey = false;
     static OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
     static ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -425,34 +426,43 @@ class Model {
 
         // build model popup sections
         providers.forEach((provider) => {
-            const typeSection = document.createElement("div");
-            typeSection.className = "model-list-section";
-            typeSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
+            const providerSection = document.createElement("div");
+            providerSection.className = "model-list-section";
+            providerSection.id = `model-list-${provider.toLowerCase()}`;
+            providerSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
 
-            const typeList = document.createElement("div");
-            typeList.className = "model-list";
-            typeSection.appendChild(typeList);
-            dom.modelPopup.appendChild(typeSection);
+            const modelList = document.createElement("div");
+            modelList.className = "model-list";
+            providerSection.appendChild(modelList);
+            dom.modelPopup.appendChild(providerSection);
 
-            const settingsTypeSection = document.createElement("div");
-            settingsTypeSection.className = "model-list-section";
-            settingsTypeSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
+            const settingsProviderSection = document.createElement("div");
+            settingsProviderSection.className = "model-list-section";
+            settingsProviderSection.id = `settings-model-list-${provider.toLowerCase()}`;
+            settingsProviderSection.innerHTML = `<h2>${provider.charAt(0).toUpperCase() + provider.slice(1)}</h2>`;
 
-            const settingsTypeList = document.createElement("div");
-            settingsTypeList.className = "model-list";
-            settingsTypeSection.appendChild(settingsTypeList);
-            dom.modelListContainer.appendChild(settingsTypeSection);
+            const settingsModelList = document.createElement("div");
+            settingsModelList.className = "model-list";
+            settingsProviderSection.appendChild(settingsModelList);
+            dom.modelListContainer.appendChild(settingsProviderSection);
 
             Model.models
                 .filter((model) => model.provider === provider)
                 .forEach((model) => {
-                    typeList.appendChild(model.createPopupItem());
-                    settingsTypeList.appendChild(model.createSettingsItem());
+                    modelList.appendChild(model.createPopupItem());
+                    settingsModelList.appendChild(model.createSettingsItem());
                 });
         });
 
         dom.modelSelect.addEventListener("click", (e) => {
             e.stopPropagation();
+            
+            if (Model.noKey) {
+                dom.modelPopup.classList.add("hidden");
+                dom.settingsPopup.classList.remove("hidden");
+                return;
+            }
+
             dom.modelPopup.classList.toggle("hidden");
 
             // click outside to close
@@ -466,6 +476,42 @@ class Model {
                 { once: true }
             );
         });
+    }
+
+    static updateProviderVisibility() {
+        const openAIKey = Boolean(dom.openaiApiKeyInput.value.trim());
+        const anthropicKey = Boolean(dom.anthropicApiKeyInput.value.trim());
+
+        document.getElementById("model-list-openai").classList.toggle("hidden", !openAIKey);
+        document.getElementById("model-list-anthropic").classList.toggle("hidden", !anthropicKey);
+        document.getElementById("settings-model-list-openai").classList.toggle("disabled", !openAIKey);
+        document.getElementById("settings-model-list-anthropic").classList.toggle("disabled", !anthropicKey);
+
+        Model.noKey = !openAIKey && !anthropicKey;
+
+        // if current model is from a provider without a key, unset it
+        if (Model.currentModel && Model.currentModel.provider === "OpenAI" && !openAIKey) {
+            Model.currentModel = null;
+        } else if (Model.currentModel && Model.currentModel.provider === "Anthropic" && !anthropicKey) {
+            Model.currentModel = null;
+        }
+
+        // if current model is unavailable, switch to an available one
+        if (!Model.currentModel) {
+            const availableModel = Model.models.find((model) => {
+                if (model.hidden) return false;
+                if (model.provider === "OpenAI" && !openAIKey) return false;
+                if (model.provider === "Anthropic" && !anthropicKey) return false;
+                return true;
+            });
+
+            if (availableModel) {
+                Model.setCurrentModel(availableModel.id);
+            } else {
+                dom.currentModel.innerText = "No API Key";
+                dom.modelSelect.querySelector(".model-icon").src = "/res/NoKey.png";
+            }
+        }
     }
 
     static setCurrentModel(modelId) {
@@ -1317,6 +1363,7 @@ Model.loadModels().then(() => {
     Model.buildPopup();
     Model.setCurrentModel(Model.defaultModel);
     Model.loadModelsFromStorage();
+    Model.updateProviderVisibility();
 });
 
 if (!localStorage.getItem("notWarnedApiKey")) {
@@ -1333,11 +1380,22 @@ dom.popupClose.addEventListener("click", () => {
 
 dom.newChatButton.addEventListener("click", (e) => {
     e.preventDefault();
+    if (conversation.generating) {
+        conversation.interrupt();
+    }
+
+    // if they click new chat again, reset to default model
+    if (!dom.mainDiv.classList.contains("chat")) {
+        Model.setCurrentModel(Model.defaultModel);
+    }
+
     dom.mainDiv.classList.remove("chat");
     dom.messagesDiv.innerHTML = "";
     dom.promptInput.value = "";
     dom.promptInput.style.height = "auto";
     dom.promptInput.focus();
+    conversation.clearPendingImages();
+    conversation.interrupt();
     conversation = new Conversation();
 });
 
@@ -1463,6 +1521,8 @@ dom.keyButtons.forEach((button) => {
 
 dom.openaiApiKeyInput.addEventListener("blur", () => {
     const openaiApiKey = dom.openaiApiKeyInput.value.trim();
+    Model.updateProviderVisibility();
+
     if (openaiApiKey && dom.saveKeyCheckbox.checked) {
         localStorage.setItem("openaiApiKey", openaiApiKey);
         dom.openaiApiKeyInput.value = openaiApiKey;
@@ -1471,6 +1531,8 @@ dom.openaiApiKeyInput.addEventListener("blur", () => {
 
 dom.anthropicApiKeyInput.addEventListener("blur", () => {
     const anthropicApiKey = dom.anthropicApiKeyInput.value.trim();
+    Model.updateProviderVisibility();
+
     if (anthropicApiKey && dom.saveKeyCheckbox.checked) {
         localStorage.setItem("anthropicApiKey", anthropicApiKey);
         dom.anthropicApiKeyInput.value = anthropicApiKey;
