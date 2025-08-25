@@ -858,7 +858,7 @@ table {
 
 .timestamp {
     font-size: 0.8rem;
-    color: var(--text-color);
+    color: var(--half-color);
     background-color: var(--bg-color);
     border-radius: var(--border-radius);
     margin-top: -1.3rem;
@@ -871,7 +871,6 @@ table {
     padding: 2px 5px;
     transition: opacity 0.2s ease;
     user-select: none;
-    pointer-events: none;
 
     @media (hover: hover) {
 
