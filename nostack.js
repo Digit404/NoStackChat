@@ -10,6 +10,8 @@ const dom = {
     addButton: document.getElementById("add"),
 
     newChatButton: document.getElementById("new-chat-button"),
+    exportChatButton: document.getElementById("export-chat-button"),
+    importChatButton: document.getElementById("import-chat-button"),
 
     popup: document.getElementById("popup"),
     popupClose: document.getElementById("popup-close"),
@@ -1453,16 +1455,6 @@ if (!localStorage.getItem("notWarnedApiKey")) {
 getSavedSettings();
 
 // buttons
-dom.popupClose.addEventListener("click", () => {
-    dom.popup.classList.add("hidden");
-    localStorage.setItem("notWarnedApiKey", "1");
-});
-
-dom.imagePreviewPopup.addEventListener("click", (e) => {
-    dom.imagePreviewPopup.classList.add("hidden");
-    dom.imagePreview.src = "";
-});
-
 dom.newChatButton.addEventListener("click", (e) => {
     e.preventDefault();
     if (Conversation.current.generating) {
@@ -1482,6 +1474,46 @@ dom.newChatButton.addEventListener("click", (e) => {
     Conversation.current.clearPendingImages();
     Conversation.current.interrupt();
     Conversation.current = new Conversation();
+});
+
+dom.exportChatButton.addEventListener("click", () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(Conversation.current.export());
+    const dlAnchorElem = document.createElement("a");
+    dlAnchorElem.setAttribute("href", dataStr);
+    const date = new Date();
+    const timestamp = date.toISOString().replace(/[:.]/g, "-");
+    dlAnchorElem.setAttribute("download", `chat-${timestamp}.json`);
+    dlAnchorElem.click();
+    dlAnchorElem.remove();
+});
+
+dom.importChatButton.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+
+    input.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            Conversation.import(event.target.result);
+        };
+        reader.readAsText(file);
+    });
+
+    input.click();
+});
+
+dom.popupClose.addEventListener("click", () => {
+    dom.popup.classList.add("hidden");
+    localStorage.setItem("notWarnedApiKey", "1");
+});
+
+dom.imagePreviewPopup.addEventListener("click", (e) => {
+    dom.imagePreviewPopup.classList.add("hidden");
+    dom.imagePreview.src = "";
 });
 
 dom.addButton.addEventListener("click", () => {

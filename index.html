@@ -20,12 +20,16 @@
 <body>
     <div class="sidebar"></div>
     <div id=main>
+        <div id="button-block">
+            <a id="new-chat-button" class="icon block-button" href="./">add_comment</a>
+            <button id="export-chat-button" class="icon block-button" title="Export chat as JSON">download</button>
+            <button id="import-chat-button" class="icon block-button" title="Import chat from JSON">upload</button>
+        </div>
         <div id="title-block">
             <h1 class="title">NoStack</h1>
             <p class="description">A serverless frontend for AI chat models.</p>
         </div>
         <button class="icon" id="settings-button">settings</button>
-        <a id="new-chat-button" class="icon" href="./">add_comment</a>
         <button id="model-select">
             <img class="model-icon mini" src="/res/NoKey.png"></img>
             <div id="current-model">Select a model</div>

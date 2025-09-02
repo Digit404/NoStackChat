@@ -457,6 +457,8 @@ table {
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    outline: var(--contrast-outline);
+    outline-offset: -1px;
     z-index: 10;
 }
 
@@ -1090,23 +1092,42 @@ table {
     }
 }
 
-#new-chat-button {
+#button-block {
     position: fixed;
+    display: flex;
+    flex-direction: row;
     top: 20px;
     left: 20px;
     background-color: var(--fg-color);
-    color: var(--text-color);
-    height: 3rem;
-    width: 3rem;
-    font-size: 2rem;
     border-radius: var(--border-radius);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
     outline: var(--contrast-outline);
+    outline-offset: -1px;
     z-index: 10;
-    user-select: none;
+
+    .block-button {
+        background-color: transparent;
+        color: var(--text-color);
+        height: 3rem;
+        width: 3rem;
+        font-size: 2rem;
+        border-radius: var(--border-radius);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--fg-color-hover);
+        }
+
+        &#export-chat-button {
+            display: none;
+        }
+
+        .chat &#export-chat-button {
+            display: flex;
+        }
+    }
 }
 
 @keyframes shimmer {
@@ -1133,7 +1154,6 @@ table {
 
     /* fg color buttons */
     .key-button:hover,
-    #new-chat-button:hover,
     .verify-button:hover,
     #settings-button:hover,
     #model-select:hover {
