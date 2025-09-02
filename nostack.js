@@ -245,12 +245,19 @@ class Model {
         return "";
     }
 
-    async getStreamResponse(messages, temperature, abortSignal) {
+    async getStreamResponse(messages, systemPrompt, temperature, abortSignal) {
         if (this.provider === "OpenAI") {
             const apiKey = this.getAPIKey();
 
             if (!apiKey) {
                 throw new Error("API key is required.");
+            }
+
+            if (systemPrompt) {
+                messages.unshift({
+                    role: "system",
+                    content: [{ type: "text", text: systemPrompt }],
+                });
             }
 
             const requestBody = {
@@ -292,16 +299,9 @@ class Model {
                 throw new Error("API key is required.");
             }
 
-            // convert messages format for Anthropic
-            const anthropicMessages = messages.filter((msg) => msg.role !== "system");
-            const systemMessage = messages.find((msg) => msg.role === "system");
-
             const requestBody = {
                 model: this.id,
-                messages: anthropicMessages.map((msg) => ({
-                    role: msg.role,
-                    content: msg.content,
-                })),
+                messages,
                 stream: true,
                 max_tokens: 8192,
             };
@@ -310,9 +310,11 @@ class Model {
                 requestBody.temperature = temperature / 2; // Anthropic uses a different scale
             }
 
+            console.log("Anthropic request body:", requestBody);
+
             // add system message if it exists
-            if (systemMessage) {
-                requestBody.system = systemMessage.content;
+            if (systemPrompt) {
+                requestBody.system = systemPrompt;
             }
 
             const response = await fetch(this.url, {
@@ -571,6 +573,8 @@ class Model {
 }
 
 class Conversation {
+    static current = null;
+
     constructor() {
         this.messages = [];
         this.generating = false;
@@ -582,6 +586,14 @@ class Conversation {
 
     getLastMessage() {
         return this.messages.length > 0 ? this.messages[this.messages.length - 1] : null;
+    }
+
+    clear() {
+        this.interrupt();
+        this.messages.forEach((message) => message.destroy());
+        this.messages = [];
+        this.idCounter = 0;
+        dom.messagesDiv.innerHTML = "";
     }
 
     redraw() {
@@ -631,10 +643,6 @@ class Conversation {
 
     toAPIFormat() {
         const conversation = this.messages.map((message) => message.toAPIFormat());
-        const systemPrompt = Conversation.getSystemPrompt();
-        if (systemPrompt) {
-            conversation.unshift(systemPrompt);
-        }
         return conversation;
     }
 
@@ -752,6 +760,68 @@ class Conversation {
         this.clearPendingImages();
     }
 
+    export() {
+        return JSON.stringify({
+            messages: this.toAPIFormat(),
+            system: Conversation.getSystemPrompt(),
+        });
+    }
+
+    static import(JsonData) {
+        try {
+            const data = JSON.parse(JsonData);
+
+            if (!data.messages || !Array.isArray(data.messages)) {
+                throw new Error("Invalid conversation format.");
+            }
+
+            Conversation.current.clear();
+
+            if (data.system) {
+                if (typeof data.system === "string") {
+                    Conversation.setSystemPrompt(data.system);
+                } else if (data.system.content && Array.isArray(data.system.content) && data.system.content[0]?.text) {
+                    Conversation.setSystemPrompt(data.system.content[0].text);
+                }
+            }
+
+            data.messages.forEach((msg) => {
+                if (!msg.role || !msg.content) return;
+
+                // if there are system messages, use the last one
+                if (msg.role === "system") {
+                    Conversation.setSystemPrompt(msg.content[0].text);
+                    return;
+                }
+
+                const message = new Message(Conversation.current, msg.role);
+
+                if (Array.isArray(msg.content)) {
+                    msg.content.forEach((part) => {
+                        if (part.type === "text" && part.text) {
+                            message.addPart("text", part.text);
+                        } else if (part.type === "image_url" && part.image_url?.url) {
+                            message.addPart("image", part.image_url.url);
+                        } else if (part.type === "image" && part.source?.type === "base64" && part.source?.data && part.source?.media_type) {
+                            const imgURL = `data:${part.source.media_type};base64,${part.source.data}`;
+                            message.addPart("image", imgURL);
+                        }
+                    });
+                } else if (typeof msg.content === "string") {
+                    message.addPart("text", msg.content);
+                }
+
+                Conversation.current.messages.push(message);
+            });
+
+            dom.mainDiv.classList.add("chat");
+            Conversation.current.redraw();
+        } catch (error) {
+            console.error("Failed to import conversation:", error);
+            Conversation.current.displayError("Failed to import conversation: " + error.message);
+        }
+    }
+
     async createResponse() {
         // remove error messages
         const errorMessages = dom.messagesDiv.querySelectorAll(".message-container.error");
@@ -780,6 +850,7 @@ class Conversation {
         };
 
         const messages = this.toAPIFormat();
+        const systemPrompt = Conversation.getSystemPrompt();
         const model = Model.getCurrentModel();
 
         const BotMessage = new Message(this, "assistant");
@@ -797,7 +868,7 @@ class Conversation {
         let reader;
 
         try {
-            reader = await model.getStreamResponse(messages, temperature, this.abortController.signal);
+            reader = await model.getStreamResponse(messages, systemPrompt, temperature, this.abortController.signal);
         } catch (error) {
             this.displayError(`Error: ${error.message}`);
             this.removeMessage(BotMessage.id);
@@ -848,14 +919,11 @@ class Conversation {
     }
 
     static getSystemPrompt() {
-        const systemPrompt = dom.systemPromptInput.value.trim() || "A helpful assistant.";
-        if (systemPrompt) {
-            return {
-                role: "system",
-                content: systemPrompt,
-            };
-        }
-        return null;
+        return dom.systemPromptInput.value.trim() || "A helpful assistant.";
+    }
+
+    static setSystemPrompt(prompt) {
+        dom.systemPromptInput.value = prompt;
     }
 }
 
@@ -1363,7 +1431,7 @@ function getSavedSettings() {
     }
 }
 
-let conversation = new Conversation();
+Conversation.current = new Conversation();
 
 const md = window.markdownit();
 md.set({
@@ -1397,8 +1465,8 @@ dom.imagePreviewPopup.addEventListener("click", (e) => {
 
 dom.newChatButton.addEventListener("click", (e) => {
     e.preventDefault();
-    if (conversation.generating) {
-        conversation.interrupt();
+    if (Conversation.current.generating) {
+        Conversation.current.interrupt();
     }
 
     // if they click new chat again, reset to default model
@@ -1411,9 +1479,9 @@ dom.newChatButton.addEventListener("click", (e) => {
     dom.promptInput.value = "";
     dom.promptInput.style.height = "auto";
     dom.promptInput.focus();
-    conversation.clearPendingImages();
-    conversation.interrupt();
-    conversation = new Conversation();
+    Conversation.current.clearPendingImages();
+    Conversation.current.interrupt();
+    Conversation.current = new Conversation();
 });
 
 dom.addButton.addEventListener("click", () => {
@@ -1433,7 +1501,7 @@ dom.addButton.addEventListener("click", () => {
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    conversation.addPendingImage(event.target.result);
+                    Conversation.current.addPendingImage(event.target.result);
                 };
             };
             reader.readAsDataURL(file);
@@ -1461,7 +1529,7 @@ dom.promptInput.addEventListener("paste", (e) => {
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    conversation.addPendingImage(event.target.result);
+                    Conversation.current.addPendingImage(event.target.result);
                 };
             };
             reader.readAsDataURL(file);
@@ -1497,7 +1565,7 @@ document.body.addEventListener("drop", (e) => {
             const img = new Image();
             img.src = event.target.result;
             img.onload = () => {
-                conversation.addPendingImage(event.target.result);
+                Conversation.current.addPendingImage(event.target.result);
             };
         };
         reader.readAsDataURL(file);
@@ -1505,13 +1573,13 @@ document.body.addEventListener("drop", (e) => {
 });
 
 dom.sendButton.addEventListener("click", () => {
-    conversation.send();
+    Conversation.current.send();
 });
 
 dom.promptInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        conversation.send();
+        Conversation.current.send();
     }
 });
 
