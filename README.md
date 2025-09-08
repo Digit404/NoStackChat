@@ -25,13 +25,13 @@ NoStack is designed with privacy in mind:
 1. Visit [NoStack.net](https://nostack.net)
 2. Paste your OpenAI or Anthropic API key in settings
 3. Choose your preferred model
-4. Start chatting!
+4. Start chatting
 
 ## API Keys
 
 You'll need to provide your own API keys:
 - For OpenAI models: Get a key from [OpenAI's platform](https://platform.openai.com/api-keys)
-- For Claude models: Get a key from [Anthropic's console](https://console.anthropic.com/keys)
+- For Claude models: Get a key from [Anthropic's console](https://console.anthropic.com/settings/keys)
 
 Your keys are stored locally in your browser if you enable the "Save API keys" option.
 
@@ -49,6 +49,6 @@ NoStack offers several customization options:
 NoStack supports a variety of models:
 - GPT-4.1/5 (Standard, Mini, Nano variants)
 - SearchGPT with web search capabilities
-- Claude 3.5/3.7/4 (Haiku, Sonnet, Opus variants)
+- Claude 3.5/3.7/4/4.1 (Haiku, Sonnet, Opus variants)
 
 You can hide models you don't use and set a default model.
