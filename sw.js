@@ -71,7 +71,6 @@ self.addEventListener("fetch", (event) => {
     const { request } = event;
     if (request.method !== "GET") return;
 
-    // 1) Handle navigations: network-first, fallback to cached shell ("/")
     if (request.mode === "navigate") {
         event.respondWith(
             (async () => {
@@ -91,7 +90,6 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // 2) For precached assets: stale-while-revalidate
     if (isPrecached(request)) {
         event.respondWith(
             (async () => {

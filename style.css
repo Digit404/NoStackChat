@@ -140,6 +140,7 @@ table {
     width: 100%;
     border-collapse: collapse;
 
+
     th,
     td {
         padding: 10px;
@@ -191,6 +192,13 @@ table {
 
 .spacer {
     flex: 1;
+}
+
+.viewport {
+    position: relative;
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: var(--border-radius);
 }
 
 /* specific styles */

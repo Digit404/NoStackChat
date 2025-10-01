@@ -312,8 +312,6 @@ class Model {
                 requestBody.temperature = temperature / 2; // Anthropic uses a different scale
             }
 
-            console.log("Anthropic request body:", requestBody);
-
             // add system message if it exists
             if (systemPrompt) {
                 requestBody.system = systemPrompt;
@@ -764,64 +762,76 @@ class Conversation {
 
     export() {
         return JSON.stringify({
-            messages: this.toAPIFormat(),
+            messages: this.messages.map((message) => message.toSaveFormat()),
             system: Conversation.getSystemPrompt(),
         });
     }
 
     static import(JsonData) {
+        // parse and load the json
+        dom.mainDiv.classList.add("chat");
+
+        let data;
         try {
-            const data = JSON.parse(JsonData);
-
-            if (!data.messages || !Array.isArray(data.messages)) {
-                throw new Error("Invalid conversation format.");
-            }
-
-            Conversation.current.clear();
-
-            if (data.system) {
-                if (typeof data.system === "string") {
-                    Conversation.setSystemPrompt(data.system);
-                } else if (data.system.content && Array.isArray(data.system.content) && data.system.content[0]?.text) {
-                    Conversation.setSystemPrompt(data.system.content[0].text);
-                }
-            }
-
-            data.messages.forEach((msg) => {
-                if (!msg.role || !msg.content) return;
-
-                // if there are system messages, use the last one
-                if (msg.role === "system") {
-                    Conversation.setSystemPrompt(msg.content[0].text);
-                    return;
-                }
-
-                const message = new Message(Conversation.current, msg.role);
-
-                if (Array.isArray(msg.content)) {
-                    msg.content.forEach((part) => {
-                        if (part.type === "text" && part.text) {
-                            message.addPart("text", part.text);
-                        } else if (part.type === "image_url" && part.image_url?.url) {
-                            message.addPart("image", part.image_url.url);
-                        } else if (part.type === "image" && part.source?.type === "base64" && part.source?.data && part.source?.media_type) {
-                            const imgURL = `data:${part.source.media_type};base64,${part.source.data}`;
-                            message.addPart("image", imgURL);
-                        }
-                    });
-                } else if (typeof msg.content === "string") {
-                    message.addPart("text", msg.content);
-                }
-
-                Conversation.current.messages.push(message);
-            });
-
-            dom.mainDiv.classList.add("chat");
-            Conversation.current.redraw();
+            data = JSON.parse(JsonData);
         } catch (error) {
-            console.error("Failed to import conversation:", error);
-            Conversation.current.displayError("Failed to import conversation: " + error.message);
+            Conversation.current.displayError("Invalid JSON file.");
+            console.warn("Failed to parse JSON:", error);
+            return;
         }
+
+        if (!data.messages || !Array.isArray(data.messages)) {
+            Conversation.current.displayError("Invalid conversation format.");
+            return;
+        }
+
+        // clear conversation
+        Conversation.current.clear();
+
+        // set system prompt if exists
+        if (data.system) {
+            if (typeof data.system === "string") {
+                Conversation.setSystemPrompt(data.system);
+            } else if (data.system.content && Array.isArray(data.system.content) && data.system.content[0]?.text) {
+                Conversation.setSystemPrompt(data.system.content[0].text);
+            }
+        }
+
+        // load messages
+        for (const messageData of data.messages) {
+            if (!messageData.role || !messageData.content || !Array.isArray(messageData.content)) {
+                continue; // skip invalid messages
+            }
+
+            const message = new Message(Conversation.current, messageData.role || "user");
+
+            if (messageData.timestamp) {
+                message.timestamp = messageData.timestamp;
+            }
+
+            if (messageData.content && Array.isArray(messageData.content)) {
+                for (const partData of messageData.content) {
+                    if (partData.model) {
+                        // if part has a model, ensure it exists and set it as current
+                        const model = Model.findById(partData.model);
+                        if (model) {
+                            Model.setCurrentModel(model.id);
+                        }
+                    }
+
+                    if (partData.type === "text" && partData.text) {
+                        message.addPart("text", partData.text || "");
+                    } else if (partData.type === "image" && partData.url) {
+                        message.addPart("image", partData.url);
+                    }
+                }
+            }
+
+            Conversation.current.messages.push(message);
+        }
+
+        Conversation.current.redraw();
+        Conversation.scrollDown();
     }
 
     async createResponse() {
@@ -962,6 +972,18 @@ class Message {
         };
     }
 
+    toSaveFormat() {
+        const content = this.parts.map((part) => part.toSaveFormat());
+
+        const messageObject = {
+            role: this.role,
+            content: content,
+            timestamp: this.timestamp,
+        };
+
+        return messageObject;
+    }
+
     destroy() {
         this.parts.forEach((part) => {
             part.destroy();
@@ -1035,7 +1057,16 @@ class MessagePart {
         this.view.updateContent();
     }
 
+    setModel(model) {
+        this.model = model;
+        this.view.updateContent();
+    }
+
     toAPIFormat() {
+        return null;
+    }
+
+    toSaveFormat() {
         return null;
     }
 
@@ -1054,6 +1085,16 @@ class TextPart extends MessagePart {
 
     toAPIFormat() {
         return { type: "text", text: this.content };
+    }
+
+    toSaveFormat() {
+        const part = this.toAPIFormat();
+
+        if (this.message.role === "assistant" && this.model) {
+            part.model = this.model.id;
+        }
+
+        return part;
     }
 }
 
@@ -1080,6 +1121,16 @@ class ImagePart extends MessagePart {
             }
         }
         return null;
+    }
+
+    toSaveFormat() {
+        const imageParts = this.getImageParts();
+        if (imageParts) {
+            return {
+                type: "image",
+                url: this.content,
+            };
+        }
     }
 
     getImageParts() {
@@ -1117,8 +1168,17 @@ class PartView {
     updateContent() {
         this.pending = false;
         this.elements.messageDiv.classList.remove("pending");
+
         if (this.elements.messageDiv) {
             this.elements.messageDiv.innerHTML = DOMPurify.sanitize(md.render(this.part.content));
+
+            const tables = this.elements.messageDiv.querySelectorAll("table");
+            tables.forEach((table) => {
+                const viewport = document.createElement("div");
+                viewport.classList.add("viewport");
+                table.parentNode.insertBefore(viewport, table);
+                viewport.appendChild(table);
+            });
         }
 
         if (window.hljs) {
