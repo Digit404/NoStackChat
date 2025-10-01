@@ -11,6 +11,7 @@ NoStack is a lightweight, serverless frontend for interacting with AI chat model
 - **Markdown & Code Rendering**: Full markdown support with syntax highlighting
 - **Customizable UI**: Choose fonts, themes, and color schemes
 - **Conversation Management**: Edit, delete, and regenerate messages
+- **Import/Export Chats**: Save conversations as JSON files
 
 ## Security
 

@@ -72,7 +72,7 @@ class Model {
         this.type = data.type || "standard";
         this.capabilities = data.capabilities || [];
         this.flags = data.flags || [];
-        this._hidden = data.hidden || false;
+        this.hidden = Boolean(data.hidden);
 
         this.isDefaultModel = Model.defaultModel === this.id;
 
@@ -108,8 +108,6 @@ class Model {
                 this.settingsItem.classList.toggle("invisible", value);
             }
         }
-
-        Model.saveModelSettings();
     }
 
     createPopupItem() {
@@ -142,6 +140,10 @@ class Model {
             Model.setCurrentModel(this.id);
             dom.modelPopup.classList.add("hidden");
         });
+
+        if (this.hidden) {
+            this.popupItem.classList.add("hidden");
+        }
 
         return this.popupItem;
     }
@@ -182,12 +184,17 @@ class Model {
             e.stopPropagation();
             this.hidden = !this.hidden;
             hideIcon.innerText = this.hidden ? "visibility_off" : "visibility";
+            Model.saveModelSettings();
         });
 
         this.settingsItem.appendChild(this.starButton);
         this.settingsItem.appendChild(icon);
         this.settingsItem.appendChild(nameDiv);
         this.settingsItem.appendChild(hideIcon);
+
+        if (this.hidden) {
+            this.settingsItem.classList.add("invisible");
+        }
 
         return this.settingsItem;
     }
@@ -1782,11 +1789,3 @@ dom.modelSettingsPopup.addEventListener("click", (e) => {
         dom.modelSettingsPopup.classList.add("hidden");
     }
 });
-
-// service worker for PWA
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").then(
-        (reg) => {},
-        (err) => console.error("SW failed", err)
-    );
-}
