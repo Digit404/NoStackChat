@@ -788,7 +788,7 @@ table {
         color: var(--text-color);
         max-width: var(--message-width);
         gap: 10px;
-        min-height: 40px;
+        min-height: 44px;
         font-size: 1.2rem;
 
         &.user {
@@ -867,6 +867,13 @@ table {
             padding-left: 0.1em;
             font-family: var(--font-icons)
         }
+
+        /* if message is empty, show … */
+        &:not(:has(*), .editing &)::after {
+            content: "…";
+            color: var(--text-color);
+            opacity: 0.25;
+        }
     }
 
     .message-button-container {
@@ -911,7 +918,7 @@ table {
     }
 }
 
-.timestamp {
+.message-header {
     position: relative;
     font-size: 0.8rem;
     color: var(--half-color);

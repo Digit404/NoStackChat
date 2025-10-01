@@ -714,9 +714,21 @@ class Conversation {
         this.createResponse();
     }
 
-    addPendingImage(imgURL) {
-        this.pendingImages.push(imgURL);
-        this.updatePendingDisplay();
+    attachImage(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                // resize image if too large. 1024 x 1024 is around what OpenAI scales down to,
+                // and theoretical maximum file size for PNG is ~4.5MB, which is just under Anthropic's limit
+                resizeImage(img, 1024, 1024, (resizedDataUrl) => {
+                    this.pendingImages.push(resizedDataUrl);
+                    this.updatePendingDisplay();
+                });
+            };
+        };
+        reader.readAsDataURL(file);
     }
 
     clearPendingImages() {
@@ -813,7 +825,7 @@ class Conversation {
             const message = new Message(Conversation.current, messageData.role || "user");
 
             if (messageData.timestamp) {
-                message.timestamp = messageData.timestamp;
+                message.timestamp = new Date(messageData.timestamp);
             }
 
             if (messageData.content && Array.isArray(messageData.content)) {
@@ -952,7 +964,7 @@ class Message {
         this.conversation = conversation;
         this.role = role;
 
-        this.timestamp = new Date().toISOString();
+        this.timestamp = new Date();
 
         this.parts = [];
     }
@@ -985,7 +997,7 @@ class Message {
         const messageObject = {
             role: this.role,
             content: content,
-            timestamp: this.timestamp,
+            timestamp: this.timestamp.toISOString(),
         };
 
         return messageObject;
@@ -1199,26 +1211,32 @@ class PartView {
         this.addCopyButtons();
     }
 
+    updateHeader() {
+        if (this.elements.messageHeader) {
+            let headerString = "";
+            if (this.part.message.role === "assistant" && this.part.model) {
+                headerString += "<img src='" + this.part.model.icon + "' class='model-icon-small' alt='" + this.part.model.name + "' /> ";
+                headerString += `${this.part.model.name} • `;
+            }
+            headerString += this.part.message.timestamp.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+            this.elements.messageHeader.innerHTML = headerString;
+            this.elements.messageHeader.title = this.part.message.timestamp.toLocaleString();
+        }
+    }
+
     build() {
         // create container
         const el = this.elements;
         el.messageContainer = document.createElement("div");
         el.messageContainer.classList.add(this.part.message.role);
 
-        el.timestamp = document.createElement("span");
-        el.timestamp.classList.add("timestamp");
-        let timestampString = "";
-        if (this.part.message.role === "assistant" && this.part.model) {
-            timestampString += "<img src='" + this.part.model.icon + "' class='model-icon-small' alt='" + this.part.model.name + "' /> ";
-            timestampString += `${this.part.model.name} • `;
-        }
-        timestampString += new Date(this.part.message.timestamp).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-        el.timestamp.innerHTML = timestampString;
-        el.timestamp.title = new Date(this.part.message.timestamp).toLocaleString();
-        el.messageContainer.appendChild(el.timestamp);
+        el.messageHeader = document.createElement("span");
+        el.messageHeader.classList.add("message-header");
+        el.messageContainer.appendChild(el.messageHeader);
+        this.updateHeader();
 
         // create message part
         if (this.part.type === "text") {
@@ -1500,6 +1518,22 @@ function getSavedSettings() {
     }
 }
 
+function resizeImage(img, maxWidth, maxHeight, callback) {
+    const canvas = document.createElement("canvas");
+    let [width, height] = [img.width, img.height];
+    let scale = Math.min(maxWidth / width, maxHeight / height, 1);
+
+    if (scale > 1) scale = 1;
+
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    callback(canvas.toDataURL("image/png"));
+}
+
 Conversation.current = new Conversation();
 
 const md = window.markdownit();
@@ -1543,6 +1577,16 @@ dom.newChatButton.addEventListener("click", (e) => {
     Conversation.current = new Conversation();
 });
 
+dom.popupClose.addEventListener("click", () => {
+    dom.popup.classList.add("hidden");
+    localStorage.setItem("notWarnedApiKey", "1");
+});
+
+dom.imagePreviewPopup.addEventListener("click", (e) => {
+    dom.imagePreviewPopup.classList.add("hidden");
+    dom.imagePreview.src = "";
+});
+
 dom.exportChatButton.addEventListener("click", () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(Conversation.current.export());
     const dlAnchorElem = document.createElement("a");
@@ -1573,18 +1617,9 @@ dom.importChatButton.addEventListener("click", () => {
     input.click();
 });
 
-dom.popupClose.addEventListener("click", () => {
-    dom.popup.classList.add("hidden");
-    localStorage.setItem("notWarnedApiKey", "1");
-});
-
-dom.imagePreviewPopup.addEventListener("click", (e) => {
-    dom.imagePreviewPopup.classList.add("hidden");
-    dom.imagePreview.src = "";
-});
+// uploading images
 
 dom.addButton.addEventListener("click", () => {
-    // upload image
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -1594,26 +1629,14 @@ dom.addButton.addEventListener("click", () => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        Array.from(files).forEach((file) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    Conversation.current.addPendingImage(event.target.result);
-                };
-            };
-            reader.readAsDataURL(file);
-        });
+        for (const file of files) {
+            if (file.type.indexOf("image") === -1) continue;
+
+            Conversation.current.attachImage(file);
+        }
     });
 
     input.click();
-});
-
-// prompt event listeners
-dom.promptInput.addEventListener("input", () => {
-    dom.promptInput.style.height = "auto";
-    dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
 });
 
 dom.promptInput.addEventListener("paste", (e) => {
@@ -1621,19 +1644,33 @@ dom.promptInput.addEventListener("paste", (e) => {
     if (!items) return;
 
     for (const item of items) {
-        if (item.type.indexOf("image") !== -1) {
-            const file = item.getAsFile();
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    Conversation.current.addPendingImage(event.target.result);
-                };
-            };
-            reader.readAsDataURL(file);
-        }
+        const file = item.getAsFile();
+        if (file.type.indexOf("image") === -1) continue;
+        e.preventDefault();
+
+        Conversation.current.attachImage(file);
     }
+});
+
+document.body.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dom.controlsContainer.classList.remove("dragover");
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of files) {
+        if (file.type.indexOf("image") === -1) continue;
+
+        Conversation.current.attachImage(file);
+    }
+});
+
+// prompt event listeners
+dom.promptInput.addEventListener("input", () => {
+    dom.promptInput.style.height = "auto";
+    dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
 });
 
 document.body.addEventListener("dragover", (e) => {
@@ -1646,29 +1683,6 @@ document.body.addEventListener("dragleave", (e) => {
     e.preventDefault();
     e.stopPropagation();
     dom.controlsContainer.classList.remove("dragover");
-});
-
-document.body.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dom.controlsContainer.classList.remove("dragover");
-
-    const files = e.dataTransfer.files;
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach((file) => {
-        if (file.type.indexOf("image") === -1) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                Conversation.current.addPendingImage(event.target.result);
-            };
-        };
-        reader.readAsDataURL(file);
-    });
 });
 
 dom.sendButton.addEventListener("click", () => {
