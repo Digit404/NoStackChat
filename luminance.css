@@ -14,8 +14,8 @@
     --bg: #e8e8e8;
     --fg-hover: #ddd;
     --half: #888;
-    --text: #111;
     --text-hover: #333;
+    --text: #111;
 
     --green: #4e7;
     --green-hover: #1b4;
@@ -143,13 +143,16 @@ input[type='reset'] {
     background-color: var(--text);
     color: var(--fg);
     border-radius: var(--border-radius);
-    padding: 10px 20px;
     font-size: 1em;
     font-family: var(--font);
     cursor: pointer;
     transition: background-color var(--transition-time),
         color var(--transition-time),
         box-shadow var(--transition-time);
+
+    &.btn {
+        padding: 10px 20px;
+    }
 
     &.secondary {
         background-color: var(--bg);

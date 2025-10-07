@@ -896,8 +896,6 @@ a {
 
 .code-wrapper {
     position: relative;
-    transition: max-height 0.2s ease;
-    max-height: auto;
     border-radius: var(--border-radius);
     overflow: hidden;
 
@@ -909,6 +907,7 @@ a {
         flex-direction: row;
         border-radius: 0 0 0 var(--border-radius);
         overflow: hidden;
+        transition: color var(--transition-time) ease, background-color var(--transition-time) ease, border-radius var(--transition-time) ease;
 
         .button {
             background-color: var(--text);
@@ -936,9 +935,17 @@ a {
         }
     }
 
+    code {
+        max-height: 700px;
+        padding: 10px 20px;
+        transition: max-height var(--transition-time) ease;
+    }
+
     &.collapsed {
-        max-height: 38px;
-        overflow: hidden;
+        code {
+            max-height: 38px;
+            overflow: hidden;
+        }
 
         .code-buttons {
             border-radius: 0;
