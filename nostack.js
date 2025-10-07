@@ -1767,7 +1767,7 @@ dom.themeSelect.addEventListener("change", (e) => {
         theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
 
-    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.remove("light", "dark", "oled");
     document.documentElement.classList.add(theme);
 
     localStorage.setItem("theme", theme);

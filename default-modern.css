@@ -24,7 +24,8 @@ Author: Digit
 }
 
 /* Dark theme variables */
-.dark {
+.dark,
+.oled {
     --hljs-text: #CCCCCC;
     --hljs-keyword: #C586C0;
     --hljs-title: #DCDCAA;
