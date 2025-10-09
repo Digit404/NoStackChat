@@ -1544,6 +1544,10 @@ function resizeImage(img, maxWidth, maxHeight, callback) {
     callback(canvas.toDataURL("image/png"));
 }
 
+function isMobile() {
+  return /Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry/i.test(navigator.userAgent);
+}
+
 Conversation.current = new Conversation();
 
 const md = window.markdownit();
@@ -1700,7 +1704,7 @@ dom.sendButton.addEventListener("click", () => {
 });
 
 dom.promptInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isMobile()) {
         e.preventDefault();
         Conversation.current.send();
     }

@@ -697,8 +697,7 @@ a {
         padding: 10px 20px;
         background-color: var(--fg);
         color: var(--text);
-        max-width: 90%;
-        width: var(--message-width);
+        max-width: min(90%, var(--message-width));
         gap: 10px;
         min-height: 44px;
         font-size: 1.2rem;
