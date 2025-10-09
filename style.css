@@ -79,7 +79,7 @@
 .oled,
 .oled .dark {
     --bg: hsla(var(--hue), var(--saturation), 0%);
-    --fg: hsla(var(--hue), var(--saturation), 6%);
+    --fg: hsla(var(--hue), var(--saturation), 8%);
     --fg-hover: hsla(var(--hue), var(--saturation), 20%);
     --dim-text: hsla(var(--hue), var(--saturation), 60%);
     --text-hover: hsla(var(--hue), var(--saturation), 80%);
@@ -162,10 +162,10 @@ a {
     /* box shadow to hide whatever is below the prompt */
     box-shadow: 0 50px 0 var(--bg);
     transition:
-        outline 0.2s ease,
-        outline-offset 0.2s ease,
-        background-color 0.2s ease,
-        color 0.2s ease;
+        outline var(--qtime) ease,
+        outline-offset var(--qtime) ease,
+        background-color var(--qtime) ease,
+        color var(--qtime) ease;
 
     .chat & {
         position: fixed;
@@ -281,7 +281,7 @@ a {
         height: 100%;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s ease;
+        transition: opacity var(--qtime) ease;
     }
 }
 
@@ -586,7 +586,7 @@ a {
                 margin-left: auto;
                 user-select: none;
                 cursor: pointer;
-                transition: opacity 0.2s ease;
+                transition: opacity var(--qtime) ease;
 
                 @media (hover: hover) {
                     &:hover {
@@ -649,7 +649,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    animation: fadeIn 0.2s ease-in-out;
+    animation: fadeIn var(--qtime) ease-in-out;
 
     .model-info-description {
         font-size: 1rem;
@@ -804,7 +804,7 @@ a {
             cursor: pointer;
             color: var(--text);
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity var(--qtime) ease;
 
             .editing & {
                 opacity: 0.25;
@@ -842,7 +842,7 @@ a {
     opacity: 0;
     width: max-content;
     padding: 2px 5px;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--qtime) ease;
     user-select: none;
     display: flex;
     align-items: center;
@@ -907,7 +907,7 @@ a {
         flex-direction: row;
         border-radius: 0 0 0 var(--border-radius);
         overflow: hidden;
-        transition: color var(--transition-time) ease, background-color var(--transition-time) ease, border-radius var(--transition-time) ease;
+        transition: color var(--qtime) ease, background-color var(--qtime) ease, border-radius var(--qtime) ease;
 
         .button {
             background-color: var(--text);
@@ -938,7 +938,7 @@ a {
     code {
         max-height: 700px;
         padding: 10px 20px;
-        transition: max-height var(--transition-time) ease;
+        transition: max-height var(--qtime) ease;
     }
 
     &.collapsed {
@@ -990,6 +990,12 @@ a {
         align-items: center;
         cursor: pointer;
         border-radius: var(--border-radius) 0 0 var(--border-radius);
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--fg-hover);
+            }
+        }
     }
 
     .api-key-input {
@@ -999,7 +1005,7 @@ a {
         color: var(--text);
         font-size: 1rem;
         font-family: var(--font);
-        transition: width 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
+        transition: width var(--qtime) ease, padding var(--qtime) ease, opacity var(--qtime) ease;
 
         &:focus {
             box-shadow: none !important;
@@ -1018,10 +1024,10 @@ a {
         align-items: center;
         cursor: pointer;
         transition:
-            width 0.2s ease,
-            padding 0.2s ease,
-            opacity 0.2s ease,
-            background-color 0.2s ease;
+            width var(--qtime) ease,
+            padding var(--qtime) ease,
+            opacity var(--qtime) ease,
+            background-color var(--qtime) ease;
     }
 }
 

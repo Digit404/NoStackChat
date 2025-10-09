@@ -492,6 +492,8 @@ class Model {
     }
 
     static updateProviderVisibility() {
+        Conversation.debug = dom.openaiApiKeyInput.value === "debug"
+        
         const openAIKey = Boolean(dom.openaiApiKeyInput.value.trim());
         const anthropicKey = Boolean(dom.anthropicApiKeyInput.value.trim());
 
@@ -581,6 +583,7 @@ class Model {
 
 class Conversation {
     static current = null;
+    static debug = false;
 
     constructor() {
         this.messages = [];
@@ -896,6 +899,13 @@ class Conversation {
 
         const temperature = parseFloat(dom.temperatureInput.value);
 
+        if (Conversation.debug) {
+            const text = "# Debug response\nThis is a debug response for testing purposes.";
+            part.content = text;
+            part.view.updateContent();
+            return;
+        }
+
         let reader;
 
         try {
@@ -931,8 +941,8 @@ class Conversation {
                         part.setContent("");
                     }
 
-                    BotMessage.parts[0].content += parsed.content;
-                    BotMessage.parts[0].view.updateContent();
+                    part.content += parsed.content;
+                    part.view.updateContent();
 
                     // auto-scroll only if user is already near the bottom
                     if (shouldAutoScroll()) {
