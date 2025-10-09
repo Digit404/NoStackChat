@@ -94,6 +94,7 @@ body {
 
 code {
     font-size: 1.1rem;
+    display: inline-block;
 }
 
 hr {
@@ -696,10 +697,13 @@ a {
         padding: 10px 20px;
         background-color: var(--fg);
         color: var(--text);
-        max-width: var(--message-width);
+        max-width: 90%;
+        width: var(--message-width);
         gap: 10px;
         min-height: 44px;
         font-size: 1.2rem;
+        overflow-wrap: anywhere;
+        overflow: hidden;
 
         &.user {
             align-self: flex-end;
@@ -765,7 +769,6 @@ a {
             max-width: 90%;
 
             @media (max-width: 600px) {
-                width: 100%;
                 max-width: 100%;
             }
         }
@@ -783,6 +786,10 @@ a {
             content: "…";
             color: var(--text);
             opacity: 0.25;
+        }
+
+        @media (max-width: 600px) {
+            max-width: 100%;
         }
     }
 
@@ -1133,7 +1140,7 @@ a {
 
     .message-container {
         .message {
-            font-size: 1rem;
+            font-size: 1.05rem;
         }
 
         .message-button {
