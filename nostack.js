@@ -492,8 +492,8 @@ class Model {
     }
 
     static updateProviderVisibility() {
-        Conversation.debug = dom.openaiApiKeyInput.value === "debug"
-        
+        Conversation.debug = dom.openaiApiKeyInput.value === "debug";
+
         const openAIKey = Boolean(dom.openaiApiKeyInput.value.trim());
         const anthropicKey = Boolean(dom.anthropicApiKeyInput.value.trim());
 
@@ -977,6 +977,7 @@ class Message {
         this.timestamp = new Date();
 
         this.parts = [];
+        this.ephemeralImages = [];
     }
 
     addPart(type, content) {
@@ -985,6 +986,32 @@ class Message {
             part = new ImagePart(this, content);
         } else {
             part = new TextPart(this, content);
+            const view = part.view;
+
+            view.elements.messageDiv.addEventListener("paste", (e) => {
+                if (!view.editing || this.role !== "user") return;
+
+                const items = e.clipboardData.items;
+                for (const item of items) {
+                    const file = item.getAsFile();
+                    if (!file || file.type.indexOf("image") === -1) continue;
+                    e.preventDefault();
+
+                    const image = new Image();
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        image.src = event.target.result;
+                        image.onload = () => {
+                            resizeImage(image, 1024, 1024, (resizedDataUrl) => {
+                                this.addEphemeralImage(resizedDataUrl);
+                                this.conversation.redraw();
+                            });
+                        };
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+            });
         }
 
         this.parts.push(part);
@@ -993,12 +1020,40 @@ class Message {
     }
 
     toAPIFormat() {
-        const content = this.parts.map((part) => part.toAPIFormat());
+        const content = this.parts
+            .filter((part) => !this.ephemeralImages.includes(part))
+            .map((part) => part.toAPIFormat())
+            .filter((part) => part !== null);
 
         return {
             role: this.role,
             content: content,
         };
+    }
+
+    addEphemeralImage(imgURL) {
+        if (!imgURL) return;
+        const part = new ImagePart(this, imgURL);
+        part.view.updateContent();
+        this.ephemeralImages.push(part);
+        return part;
+    }
+
+    deleteEphemeralImages() {
+        for (const part of this.ephemeralImages) {
+            this.removePart(part);
+        }
+
+        this.ephemeralImages = [];
+    }
+
+    solidifyEphemeralImages() {
+        for (const part of this.ephemeralImages) {
+            this.parts.push(part);
+            part.view.elements.messageContainer.classList.remove("ephemeral");
+        }
+
+        this.ephemeralImages = [];
     }
 
     toSaveFormat() {
@@ -1021,12 +1076,19 @@ class Message {
     }
 
     removePart(part) {
-        const index = this.parts.indexOf(part);
+        function removeFrom(arr) {
+            const idx = arr.indexOf(part);
 
-        if (index !== -1) {
-            part.destroy();
-            this.parts.splice(index, 1);
-        } else {
+            if (idx !== -1) {
+                part.destroy();
+                arr.splice(idx, 1);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (!removeFrom(this.parts) && !removeFrom(this.ephemeralImages)) {
             console.warn("Part not found in message.");
         }
 
@@ -1047,6 +1109,15 @@ class Message {
                 const img = part.view.elements.messageContainer;
                 imageContainer.appendChild(img);
                 imageContainer.classList.remove("hidden");
+            }
+        }
+
+        for (const image of this.ephemeralImages) {
+            if (image.type === "image") {
+                const img = image.view.elements.messageContainer;
+                imageContainer.appendChild(img);
+                imageContainer.classList.remove("hidden");
+                img.classList.add("ephemeral");
             }
         }
 
@@ -1336,7 +1407,7 @@ class PartView {
         this.editing = true;
         this.elements.messageContainer.classList.add("editing");
         this.elements.messageDiv.textContent = this.part.content;
-        this.elements.messageDiv.contentEditable = "true";
+        this.elements.messageDiv.contentEditable = "plaintext-only";
         this.elements.messageDiv.focus();
 
         this.updateButtonVisibility();
@@ -1360,6 +1431,7 @@ class PartView {
 
         this.part.setContent(newText);
         this.editing = false;
+        this.part.message.solidifyEphemeralImages();
         this.elements.messageDiv.contentEditable = "false";
         this.elements.messageContainer.classList.remove("editing");
         this.elements.messageDiv.blur();
@@ -1379,6 +1451,7 @@ class PartView {
         if (this.part.type !== "text" || !this.editing) return;
 
         this.editing = false;
+        this.part.message.deleteEphemeralImages();
         this.elements.messageDiv.contentEditable = "false";
         this.elements.messageContainer.classList.remove("editing");
         this.updateContent();
@@ -1545,7 +1618,7 @@ function resizeImage(img, maxWidth, maxHeight, callback) {
 }
 
 function isMobile() {
-  return /Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry/i.test(navigator.userAgent);
+    return /Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry/i.test(navigator.userAgent);
 }
 
 Conversation.current = new Conversation();
@@ -1685,6 +1758,8 @@ document.body.addEventListener("drop", (e) => {
 dom.promptInput.addEventListener("input", () => {
     dom.promptInput.style.height = "auto";
     dom.promptInput.style.height = `${dom.promptInput.scrollHeight}px`;
+
+    dom.messagesViewport.style.paddingBottom = `${dom.controlsContainer.offsetHeight + 45}px`;
 });
 
 document.body.addEventListener("dragover", (e) => {
