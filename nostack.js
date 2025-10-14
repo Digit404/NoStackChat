@@ -710,6 +710,7 @@ class Conversation {
         // clear input
         dom.promptInput.value = "";
         dom.promptInput.style.height = "auto";
+        dom.messagesViewport.style.paddingBottom = `${dom.controlsContainer.offsetHeight + 45}px`;
 
         // add user message to DOM
         userMessage.addToDOM();
@@ -1020,10 +1021,7 @@ class Message {
     }
 
     toAPIFormat() {
-        const content = this.parts
-            .filter((part) => !this.ephemeralImages.includes(part))
-            .map((part) => part.toAPIFormat())
-            .filter((part) => part !== null);
+        const content = this.parts.map((part) => part.toAPIFormat()).filter((part) => part !== null);
 
         return {
             role: this.role,
