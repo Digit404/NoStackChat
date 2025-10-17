@@ -79,7 +79,7 @@
 .oled,
 .oled .dark {
     --bg: hsla(var(--hue), var(--saturation), 0%);
-    --fg: hsla(var(--hue), var(--saturation), 8%);
+    --fg: hsla(var(--hue), var(--saturation), 10%);
     --fg-hover: hsla(var(--hue), var(--saturation), 20%);
     --dim-text: hsla(var(--hue), var(--saturation), 60%);
     --text-hover: hsla(var(--hue), var(--saturation), 80%);

@@ -1558,8 +1558,18 @@ class PartView {
     }
 }
 
+function setTheme(theme) {
+    document.documentElement.classList.remove("light", "dark", "oled");
+
+    if (theme === "system") {
+        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+
+    document.documentElement.classList.add(theme);
+}
+
 function getSavedSettings() {
-    const font = localStorage.getItem("font") || "sans-serif";
+    const font = localStorage.getItem("font") || "sans";
     const theme = localStorage.getItem("theme") || "light";
     const systemPrompt = localStorage.getItem("systemPrompt");
     const hue = localStorage.getItem("hue") || "230";
@@ -1585,11 +1595,10 @@ function getSavedSettings() {
         dom.anthropicApiKeyInput.value = anthropicApiKey;
     }
 
-    document.documentElement.classList.remove("mono", "slab", "serif", "sans-serif");
+    document.documentElement.classList.remove("mono", "slab", "serif", "sans");
     document.documentElement.classList.add(font);
 
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(theme);
+    setTheme(theme);
 
     document.documentElement.style.setProperty("--hue", hue);
     document.documentElement.style.setProperty("--saturation", `${saturation}%`);
@@ -1800,6 +1809,9 @@ dom.keyButtons.forEach((button) => {
         const keyContainer = e.target.closest(".api-key-container");
         if (keyContainer) {
             keyContainer.classList.toggle("collapsed");
+            if (!keyContainer.classList.contains("collapsed")) {
+                keyContainer.querySelector("input").focus();
+            }
         }
     });
 });
@@ -1841,7 +1853,7 @@ dom.saveKeyCheckbox.addEventListener("change", (e) => {
 
 dom.fontSelect.addEventListener("change", (e) => {
     const font = e.target.value;
-    document.documentElement.classList.remove("mono", "slab", "serif");
+    document.documentElement.classList.remove("mono", "slab", "serif", "sans");
     document.documentElement.classList.add(font);
 
     localStorage.setItem("font", font);
@@ -1850,12 +1862,7 @@ dom.fontSelect.addEventListener("change", (e) => {
 dom.themeSelect.addEventListener("change", (e) => {
     let theme = e.target.value;
 
-    if (theme === "system") {
-        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-
-    document.documentElement.classList.remove("light", "dark", "oled");
-    document.documentElement.classList.add(theme);
+    setTheme(theme);
 
     localStorage.setItem("theme", theme);
 });
