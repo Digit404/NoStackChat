@@ -1,5 +1,33 @@
 [
     {
+        "id": "gpt-4o",
+        "provider": "OpenAI",
+        "name": "GPT-4o",
+        "description": "Fast, intelligent, flexible GPT model.",
+        "icon": "/res/GPT_standard.png",
+        "color": "#FFF",
+        "type": "standard",
+        "hidden": true,
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
+    },
+    {
+        "id": "gpt-4o-mini",
+        "provider": "OpenAI",
+        "name": "GPT-4o Mini",
+        "description": "Fast, affordable small model for focused tasks.",
+        "icon": "/res/GPT_mini.png",
+        "color": "#10A37F",
+        "type": "mini",
+        "hidden": true,
+        "capabilities": [
+            "streaming",
+            "vision"
+        ]
+    },
+    {
         "id": "gpt-4.1",
         "provider": "OpenAI",
         "name": "GPT-4.1",
@@ -100,10 +128,11 @@
         "id": "claude-3-5-haiku-20241022",
         "provider": "Anthropic",
         "name": "Claude Haiku 3.5",
-        "description": "Fastest model provided by Anthropic.",
-        "icon": "/res/Claude-3.5.png",
+        "description": "Fast legacy model provided by Anthropic.",
+        "icon": "/res/Claude-haiku.png",
         "color": "#c99878",
         "type": "mini",
+        "hidden": true,
         "capabilities": [
             "streaming",
             "vision"
@@ -118,9 +147,10 @@
         "provider": "Anthropic",
         "name": "Claude Sonnet 3.5",
         "description": "Cheaper model provided by Anthropic.",
-        "icon": "/res/Claude-3.5.png",
-        "color": "#c99878",
+        "icon": "/res/Claude-sonnet.png",
+        "color": "#FFF",
         "type": "standard",
+        "hidden": true,
         "capabilities": [
             "streaming",
             "vision"
@@ -135,8 +165,8 @@
         "provider": "Anthropic",
         "name": "Claude Sonnet 3.7",
         "description": "Standard model from Anthropic, optimized for speed and cost.",
-        "icon": "/res/Claude-3.7.png",
-        "color": "#000",
+        "icon": "/res/Claude-sonnet.png",
+        "color": "#FFF",
         "type": "standard",
         "capabilities": [
             "streaming",
@@ -153,8 +183,8 @@
         "provider": "Anthropic",
         "name": "Claude Sonnet 4",
         "description": "Standard reasoning model from Anthropic.",
-        "icon": "/res/Claude-4.png",
-        "color": "#FFF",
+        "icon": "/res/Claude-sonnet.png",
+        "color": "#111",
         "type": "standard",
         "capabilities": [
             "streaming",
@@ -171,9 +201,10 @@
         "provider": "Anthropic",
         "name": "Claude Opus 4",
         "description": "High performance reasoning model from Anthropic.",
-        "icon": "/res/Claude-4.png",
+        "icon": "/res/Claude-opus.png",
         "color": "#FFF",
         "type": "standard",
+        "hidden": true,
         "capabilities": [
             "streaming",
             "vision",
@@ -189,9 +220,45 @@
         "provider": "Anthropic",
         "name": "Claude Opus 4.1",
         "description": "Anthropic's most powerful reasoning model.",
-        "icon": "/res/Claude-4.png",
+        "icon": "/res/Claude-opus.png",
         "color": "#FFF",
         "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
+        ]
+    },
+    {
+        "id": "claude-sonnet-4-5-20250929",
+        "provider": "Anthropic",
+        "name": "Claude Sonnet 4.5",
+        "description": "Anthropic's smartest model for complex tasks.",
+        "icon": "/res/Claude-sonnet.png",
+        "color": "#111",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
+        ]
+    },
+    {
+        "id": "claude-haiku-4-5-20251001",
+        "provider": "Anthropic",
+        "name": "Claude Haiku 4.5",
+        "description": "Anthropic's fastest model with high intelligence.",
+        "icon": "/res/Claude-haiku.png",
+        "color": "#c99878",
+        "type": "mini",
         "capabilities": [
             "streaming",
             "vision",
