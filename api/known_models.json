@@ -143,24 +143,6 @@
         ]
     },
     {
-        "id": "claude-3-5-sonnet-20241022",
-        "provider": "Anthropic",
-        "name": "Claude Sonnet 3.5",
-        "description": "Cheaper model provided by Anthropic.",
-        "icon": "/res/Claude-sonnet.png",
-        "color": "#FFF",
-        "type": "standard",
-        "hidden": true,
-        "capabilities": [
-            "streaming",
-            "vision"
-        ],
-        "flags": [
-            "strict_alternation",
-            "system_role_unsupported"
-        ]
-    },
-    {
         "id": "claude-3-7-sonnet-20250219",
         "provider": "Anthropic",
         "name": "Claude Sonnet 3.7",

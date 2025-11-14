@@ -702,7 +702,7 @@ a {
         min-height: 44px;
         font-size: 1.2rem;
         overflow-wrap: anywhere;
-        overflow: hidden;
+        overflow: clip;
 
         &.user {
             align-self: flex-end;

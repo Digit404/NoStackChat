@@ -23,6 +23,8 @@
     --blue-hover: #25c;
     --red: #e44;
     --red-hover: #b22;
+    --yellow: #fb3;
+    --yellow-hover: #d80;
 
     /* shadows only where contrast is needed */
     --shadow: 4px 4px 10px rgba(0, 0, 0, 0.05);
@@ -225,7 +227,6 @@ code {
     padding: 2.5px 5px;
     border-radius: var(--border-radius);
     font-size: 1em;
-    display: inline-block;
 }
 
 pre code,
@@ -626,10 +627,30 @@ input[type="color"] {
     flex-direction: inherit;
     gap: 15px;
     align-items: center;
+
+    &.start {
+        align-items: flex-start;
+    }
+
+    &.end {
+        align-items: flex-end;
+    }
+
+    &.center {
+        align-items: center;
+    }
+
+    &.stretch {
+        align-items: stretch;
+    }
 }
 
 .padded {
     padding: 20px;
+}
+
+.very-padded {
+    padding: 50px;
 }
 
 .wide {
@@ -645,7 +666,7 @@ input[type="color"] {
 .viewport {
     position: relative;
     max-width: 100%;
-    overflow-x: auto;
+    /* overflow-x: auto; */
     border-radius: var(--border-radius);
 }
 
@@ -690,6 +711,18 @@ input[type="color"] {
     &.anti {
         background-color: var(--bg);
     }
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
 }
 
 .reading-width {
