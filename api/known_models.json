@@ -109,6 +109,20 @@
         ]
     },
     {
+        "id": "gpt-5.1",
+        "provider": "OpenAI",
+        "name": "GPT-5.1",
+        "description": "OpenAI's best model for coding and agentic tasks.",
+        "icon": "/res/GPT_plus.png",
+        "color": "#FFF",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ]
+    },
+    {
         "id": "gpt-4o-search-preview",
         "provider": "OpenAI",
         "name": "SearchGPT",
