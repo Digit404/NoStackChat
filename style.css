@@ -47,6 +47,12 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    src: url('res/fonts/MaterialSymbolsRounded.woff2') format('woff2');
+    font-display: swap;
+}
+
 :root {
     --message-width: 900px;
     --chat-width: 1000px;
@@ -84,6 +90,27 @@
     --dim-text: hsla(var(--hue), var(--saturation), 60%);
     --text-hover: hsla(var(--hue), var(--saturation), 80%);
     --text: hsla(var(--hue), var(--saturation), 90%);
+}
+
+.auto {
+    @media (prefers-color-scheme: dark) {
+        --bg: hsla(var(--hue), var(--saturation), 6%);
+        --fg: hsla(var(--hue), var(--saturation), 12%);
+        --fg-hover: hsla(var(--hue), var(--saturation), 20%);
+        --dim-text: hsla(var(--hue), var(--saturation), 60%);
+        --text-hover: hsla(var(--hue), var(--saturation), 80%);
+        --text: hsla(var(--hue), var(--saturation), 90%);
+
+        .dark {
+            --fg: hsla(var(--hue), var(--saturation), 97%);
+            --bg: hsla(var(--hue), var(--saturation), 90%);
+            --fg-hover: hsla(var(--hue), var(--saturation), 85%);
+            --half: hsla(var(--hue), var(--saturation), 50%);
+            --dim-text: hsla(var(--hue), var(--saturation), 30%);
+            --text: hsla(var(--hue), var(--saturation), 10%);
+            --text-hover: hsla(var(--hue), var(--saturation), 20%);
+        }
+    }
 }
 
 body {

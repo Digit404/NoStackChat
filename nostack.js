@@ -1559,18 +1559,13 @@ class PartView {
 }
 
 function setTheme(theme) {
-    document.documentElement.classList.remove("light", "dark", "oled");
-
-    if (theme === "system") {
-        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-
+    document.documentElement.classList.remove("light", "dark", "oled", "auto");
     document.documentElement.classList.add(theme);
 }
 
 function getSavedSettings() {
     const font = localStorage.getItem("font") || "sans";
-    const theme = localStorage.getItem("theme") || "light";
+    const theme = localStorage.getItem("theme") || "auto";
     const systemPrompt = localStorage.getItem("systemPrompt");
     const hue = localStorage.getItem("hue") || "230";
     const saturation = localStorage.getItem("saturation") || "5";
