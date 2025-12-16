@@ -1149,14 +1149,14 @@ a {
         &:hover {
             background-color: var(--fg-hover);
         }
+    }
 
-        &#export-chat-button {
-            display: none;
-        }
+    #export-chat-button {
+        display: none;
+    }
 
-        .chat &#export-chat-button {
-            display: flex;
-        }
+    .chat & #export-chat-button {
+        display: flex;
     }
 
     #hamburger-button {
@@ -1167,12 +1167,12 @@ a {
         flex-direction: column;
 
         .block-button,
-        .chat & .block-button#export-chat-button {
+        .chat & #export-chat-button {
             display: none;
         }
 
         &:hover .block-button { 
-            display: flex;
+            display: flex !important;
         }
 
         #hamburger-button {
