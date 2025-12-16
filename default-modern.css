@@ -41,6 +41,24 @@ Author: Digit
     --hljs-deletion-bg: #67060c;
 }
 
+@media (prefers-color-scheme: dark) {
+    .auto {
+        --hljs-text: #CCCCCC;
+        --hljs-keyword: #C586C0;
+        --hljs-title: #DCDCAA;
+        --hljs-string: #CE9178;
+        --hljs-tag: #569CD6;
+        --hljs-class: #4EC9B0;
+        --hljs-number: #B5CEA8;
+        --hljs-variable: #9CDCFE;
+        --hljs-comment: #6A9955;
+        --hljs-addition: #B5CEA8;
+        --hljs-addition-bg: #033a16;
+        --hljs-deletion: #CE9178;
+        --hljs-deletion-bg: #67060c;
+    }
+}
+
 pre code.hljs {
     display: block;
     overflow-x: auto;
@@ -48,10 +66,6 @@ pre code.hljs {
 
 code.hljs {
     padding: 3px 5px;
-}
-
-.hljs {
-    color: var(--hljs-text);
 }
 
 .hljs-keyword,

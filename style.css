@@ -59,57 +59,63 @@
     --contrast-outline: 5px solid var(--bg);
     --hue: 230;
     --saturation: 5%;
+
+    --half: hsla(var(--hue), var(--saturation), 50%);
+
+    --light-fg: hsla(var(--hue), var(--saturation), 97%);
+    --light-bg: hsla(var(--hue), var(--saturation), 90%);
+    --light-fg-hover: hsla(var(--hue), var(--saturation), 85%);
+    --light-dim-text: hsla(var(--hue), var(--saturation), 30%);
+    --light-text: hsla(var(--hue), var(--saturation), 10%);
+    --light-text-hover: hsla(var(--hue), var(--saturation), 20%);
+
+    --dark-bg: hsla(var(--hue), var(--saturation), 6%);
+    --dark-fg: hsla(var(--hue), var(--saturation), 12%);
+    --dark-fg-hover: hsla(var(--hue), var(--saturation), 20%);
+    --dark-dim-text: hsla(var(--hue), var(--saturation), 60%);
+    --dark-text-hover: hsla(var(--hue), var(--saturation), 80%);
+    --dark-text: hsla(var(--hue), var(--saturation), 90%);
+
+    --oled-bg: hsla(var(--hue), var(--saturation), 0%);
+    --oled-fg: hsla(var(--hue), var(--saturation), 10%);
 }
 
 :root,
-.light,
-.dark .dark {
-    --fg: hsla(var(--hue), var(--saturation), 97%);
-    --bg: hsla(var(--hue), var(--saturation), 90%);
-    --fg-hover: hsla(var(--hue), var(--saturation), 85%);
-    --half: hsla(var(--hue), var(--saturation), 50%);
-    --dim-text: hsla(var(--hue), var(--saturation), 30%);
-    --text: hsla(var(--hue), var(--saturation), 10%);
-    --text-hover: hsla(var(--hue), var(--saturation), 20%);
+.light {
+    --fg: var(--light-fg);
+    --bg: var(--light-bg);
+    --fg-hover: var(--light-fg-hover);
+    --dim-text: var(--light-dim-text);
+    --text: var(--light-text);
+    --text-hover: var(--light-text-hover);
 }
 
 .dark {
-    --bg: hsla(var(--hue), var(--saturation), 6%);
-    --fg: hsla(var(--hue), var(--saturation), 12%);
-    --fg-hover: hsla(var(--hue), var(--saturation), 20%);
-    --dim-text: hsla(var(--hue), var(--saturation), 60%);
-    --text-hover: hsla(var(--hue), var(--saturation), 80%);
-    --text: hsla(var(--hue), var(--saturation), 90%);
+    --bg: var(--dark-bg);
+    --fg: var(--dark-fg);
+    --fg-hover: var(--dark-fg-hover);
+    --dim-text: var(--dark-dim-text);
+    --text: var(--dark-text);
+    --text-hover: var(--dark-text-hover);
 }
 
-.oled,
-.oled .dark {
-    --bg: hsla(var(--hue), var(--saturation), 0%);
-    --fg: hsla(var(--hue), var(--saturation), 10%);
-    --fg-hover: hsla(var(--hue), var(--saturation), 20%);
-    --dim-text: hsla(var(--hue), var(--saturation), 60%);
-    --text-hover: hsla(var(--hue), var(--saturation), 80%);
-    --text: hsla(var(--hue), var(--saturation), 90%);
+.oled {
+    --bg: var(--oled-bg);
+    --fg: var(--oled-fg);
+    --fg-hover: var(--dark-fg-hover);
+    --dim-text: var(--dark-dim-text);
+    --text: var(--dark-text);
+    --text-hover: var(--dark-text-hover);
 }
 
 .auto {
     @media (prefers-color-scheme: dark) {
-        --bg: hsla(var(--hue), var(--saturation), 6%);
-        --fg: hsla(var(--hue), var(--saturation), 12%);
-        --fg-hover: hsla(var(--hue), var(--saturation), 20%);
-        --dim-text: hsla(var(--hue), var(--saturation), 60%);
-        --text-hover: hsla(var(--hue), var(--saturation), 80%);
-        --text: hsla(var(--hue), var(--saturation), 90%);
-
-        .dark {
-            --fg: hsla(var(--hue), var(--saturation), 97%);
-            --bg: hsla(var(--hue), var(--saturation), 90%);
-            --fg-hover: hsla(var(--hue), var(--saturation), 85%);
-            --half: hsla(var(--hue), var(--saturation), 50%);
-            --dim-text: hsla(var(--hue), var(--saturation), 30%);
-            --text: hsla(var(--hue), var(--saturation), 10%);
-            --text-hover: hsla(var(--hue), var(--saturation), 20%);
-        }
+        --bg: var(--dark-bg);
+        --fg: var(--dark-fg);
+        --fg-hover: var(--dark-fg-hover);
+        --dim-text: var(--dark-dim-text);
+        --text: var(--dark-text);
+        --text-hover: var(--dark-text-hover);
     }
 }
 
@@ -159,7 +165,7 @@ a {
             display: none;
         }
 
-        #new-chat-button {
+        #button-block {
             display: none;
         }
 
@@ -371,6 +377,11 @@ a {
         text-align: center;
         justify-content: center;
         font-size: 4rem;
+    }
+
+    #popup-text {
+        max-height: 50dvh;
+        overflow-y: auto;
     }
 }
 
@@ -767,6 +778,41 @@ a {
             }
         }
 
+        &.user,
+        &.user * {
+            --bg: var(--dark-bg);
+            --fg: var(--dark-fg);
+            --fg-hover: var(--dark-fg-hover);
+            --dim-text: var(--dark-dim-text);
+            --text: var(--dark-text);
+            --text-hover: var(--dark-text-hover);
+
+            .dark & {
+                --bg: var(--light-bg);
+                --fg: var(--light-fg);
+                --fg-hover: var(--light-fg-hover);
+                --dim-text: var(--light-dim-text);
+                --text: var(--light-text);
+                --text-hover: var(--light-text-hover);
+            }
+
+            @media (prefers-color-scheme: dark) {
+                .auto & {
+                    --bg: var(--light-bg);
+                    --fg: var(--light-fg);
+                    --fg-hover: var(--light-fg-hover);
+                    --dim-text: var(--light-dim-text);
+                    --text: var(--light-text);
+                    --text-hover: var(--light-text-hover);
+                }
+            }
+
+            .oled & {
+                --bg: var(--oled-bg);
+                --fg: var(--oled-fg);
+            }
+        }
+
         .editing & {
             outline: 5px solid var(--blue);
             white-space: pre-wrap;
@@ -979,6 +1025,7 @@ a {
 
     code {
         background-color: transparent;
+        color: var(--text);
         max-height: 700px;
         padding: 10px 20px;
         padding-right: 80px;
@@ -1108,6 +1155,27 @@ a {
         }
 
         .chat &#export-chat-button {
+            display: flex;
+        }
+    }
+
+    #hamburger-button {
+        display: none;
+    }
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+
+        .block-button,
+        .chat & .block-button#export-chat-button {
+            display: none;
+        }
+
+        &:hover .block-button { 
+            display: flex;
+        }
+
+        #hamburger-button {
             display: flex;
         }
     }

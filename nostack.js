@@ -1284,6 +1284,9 @@ class PartView {
             const codeBlocks = this.elements.messageDiv.querySelectorAll("pre code");
             codeBlocks.forEach((block) => {
                 hljs.highlightElement(block);
+                if (this.part.message.role === "user") {
+                    block.classList.add("dark");
+                }
             });
         }
 
@@ -1322,10 +1325,6 @@ class PartView {
             el.messageContainer.classList.add("message-container");
             el.messageDiv = document.createElement("div");
             el.messageDiv.classList.add("message", this.part.message.role);
-
-            if (this.part.message.role === "user") {
-                el.messageDiv.classList.add("dark");
-            }
 
             el.buttonContainer = document.createElement("div");
             el.buttonContainer.classList.add("message-button-container");
