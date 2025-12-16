@@ -994,8 +994,14 @@ class Message {
 
                 const items = e.clipboardData.items;
                 for (const item of items) {
+                    if (item.kind !== "file") continue;
+                    if (!item.type.startsWith("image/")) continue;
+
                     const file = item.getAsFile();
-                    if (!file || file.type.indexOf("image") === -1) continue;
+
+                    if (!file) continue;
+                    if (file.type.indexOf("image") === -1) continue;
+
                     e.preventDefault();
 
                     const image = new Image();
@@ -1732,8 +1738,14 @@ dom.promptInput.addEventListener("paste", (e) => {
     if (!items) return;
 
     for (const item of items) {
+        if (item.kind !== "file") continue;
+        if (!item.type.startsWith("image/")) continue;
+
         const file = item.getAsFile();
+
+        if (!file) continue;
         if (file.type.indexOf("image") === -1) continue;
+
         e.preventDefault();
 
         Conversation.current.attachImage(file);
