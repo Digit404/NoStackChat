@@ -1171,8 +1171,9 @@ a {
             display: none;
         }
 
-        &:hover .block-button { 
-            display: flex !important;
+        &:hover .block-button,
+        .chat &:hover #export-chat-button {
+            display: flex;
         }
 
         #hamburger-button {
