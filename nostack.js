@@ -665,6 +665,7 @@ class Conversation {
     }
 
     displayError(message) {
+        dom.mainDiv.classList.add("chat");
         const errorMessage = new Message(this, "error");
         errorMessage.addPart("text", message);
         errorMessage.addToDOM();
@@ -1625,7 +1626,10 @@ function resizeImage(img, maxWidth, maxHeight, callback) {
 }
 
 function isMobile() {
-    return /Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry/i.test(navigator.userAgent);
+    // The goal of detecting mobile at the end of the day boils down to one thing: 
+    // Do they have a mouse and keyboard at all times? Because that is what is gonna 
+    // change the user experience. This function makes sure they don't have a fine pointer.
+    return window.matchMedia("(pointer: coarse) and not (pointer: fine)").matches;
 }
 
 Conversation.current = new Conversation();
@@ -1761,9 +1765,27 @@ document.body.addEventListener("drop", (e) => {
     if (!files || files.length === 0) return;
 
     for (const file of files) {
-        if (file.type.indexOf("image") === -1) continue;
+        if (file.type.indexOf("image") !== -1){
+            Conversation.current.attachImage(file);
+            continue;
+        }
 
-        Conversation.current.attachImage(file);
+        if (file.type === "application/json" || file.name.endsWith(".json")) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    Conversation.import(event.target.result);
+                } catch (error) {
+                    Conversation.current.displayError("Failed to import chat: Invalid JSON file.");
+                    console.error("Failed to import chat:", error);
+                }
+            };
+            reader.onerror = (event) => {
+                Conversation.current.displayError("Failed to import chat: Unable to read file.");
+                console.error("Failed to read file:", event);
+            }
+            reader.readAsText(file);
+        }
     }
 });
 
