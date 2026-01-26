@@ -1626,10 +1626,19 @@ function resizeImage(img, maxWidth, maxHeight, callback) {
 }
 
 function isMobile() {
-    // The goal of detecting mobile at the end of the day boils down to one thing: 
-    // Do they have a mouse and keyboard at all times? Because that is what is gonna 
-    // change the user experience. This function makes sure they don't have a fine pointer.
-    return window.matchMedia("(pointer: coarse) and not (pointer: fine)").matches;
+    const toMatch = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+    ];
+    
+    return toMatch.some((toMatchItem) => {
+        return navigator.userAgent.match(toMatchItem);
+    });
 }
 
 Conversation.current = new Conversation();
