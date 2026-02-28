@@ -181,6 +181,7 @@
         "icon": "/res/Claude-sonnet.png",
         "color": "#FFF",
         "type": "standard",
+        "hidden": true,
         "capabilities": [
             "streaming",
             "vision",
@@ -199,6 +200,7 @@
         "icon": "/res/Claude-sonnet.png",
         "color": "#111",
         "type": "standard",
+        "hidden": true,
         "capabilities": [
             "streaming",
             "vision",
@@ -236,6 +238,7 @@
         "icon": "/res/Claude-opus.png",
         "color": "#FFF",
         "type": "standard",
+        "hidden": true,
         "capabilities": [
             "streaming",
             "vision",
@@ -272,6 +275,42 @@
         "icon": "/res/Claude-haiku.png",
         "color": "#c99878",
         "type": "mini",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
+        ]
+    },
+    {
+        "id": "claude-opus-4-6",
+        "provider": "Anthropic",
+        "name": "Claude Opus 4.6",
+        "description": "Anthropic's latest high-performance reasoning model.",
+        "icon": "/res/Claude-opus.png",
+        "color": "#FFF",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ],
+        "flags": [
+            "strict_alternation",
+            "system_role_unsupported"
+        ]
+    }, 
+    {
+        "id": "claude-sonnet-4-6",
+        "provider": "Anthropic",
+        "name": "Claude Sonnet 4.6",
+        "description": "Anthropic's latest model optimized for complex reasoning.",
+        "icon": "/res/Claude-sonnet.png",
+        "color": "#111",
+        "type": "standard",
         "capabilities": [
             "streaming",
             "vision",
