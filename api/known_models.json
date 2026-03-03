@@ -140,6 +140,20 @@
         ]
     },
     {
+        "id": "gpt-5.3-chat-latest",
+        "provider": "OpenAI",
+        "name": "GPT-5.3",
+        "description": "Smoother and more helpful conversations.",
+        "icon": "/res/GPT_plus.png",
+        "color": "#FFF",
+        "type": "standard",
+        "capabilities": [
+            "streaming",
+            "vision",
+            "reasoning"
+        ]
+    },
+    {
         "id": "gpt-4o-search-preview",
         "provider": "OpenAI",
         "name": "SearchGPT",
@@ -153,43 +167,6 @@
         ],
         "flags": [
             "temperature_unsupported"
-        ]
-    },
-    {
-        "id": "claude-3-5-haiku-20241022",
-        "provider": "Anthropic",
-        "name": "Claude Haiku 3.5",
-        "description": "Fast legacy model provided by Anthropic.",
-        "icon": "/res/Claude-haiku.png",
-        "color": "#c99878",
-        "type": "mini",
-        "hidden": true,
-        "capabilities": [
-            "streaming",
-            "vision"
-        ],
-        "flags": [
-            "strict_alternation",
-            "system_role_unsupported"
-        ]
-    },
-    {
-        "id": "claude-3-7-sonnet-20250219",
-        "provider": "Anthropic",
-        "name": "Claude Sonnet 3.7",
-        "description": "Standard model from Anthropic, optimized for speed and cost.",
-        "icon": "/res/Claude-sonnet.png",
-        "color": "#FFF",
-        "type": "standard",
-        "hidden": true,
-        "capabilities": [
-            "streaming",
-            "vision",
-            "reasoning"
-        ],
-        "flags": [
-            "strict_alternation",
-            "system_role_unsupported"
         ]
     },
     {
